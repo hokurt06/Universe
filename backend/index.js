@@ -222,16 +222,12 @@ const router = express.Router();
  *    - Description: Retrieve all grades.
  *    - Authentication: Required.
  *
- * 9. POST /enrollments
- *    - Description: Enroll the logged-in user in a course.
- *    - Required Fields: course_id.
- *    - Authentication: Required.
  *
- * 10. GET /enrollments
+ * 9. GET /enrollments
  *    - Description: Retrieve the courses the logged-in user is enrolled in.
  *    - Authentication: Required.
  *
- * 11. GET /protected
+ * 10. GET /protected
  *    - Description: A test endpoint to verify token validity.
  *    - Authentication: Required.
  */
@@ -420,29 +416,6 @@ router.get("/grades", authenticateToken, (req, res) => {
 });
 
 // --- Enrollments Endpoints ---
-
-// Enroll the logged-in user in a course.
-router.post(
-  "/enrollments",
-  authenticateToken,
-  requireFields(["course_id"]),
-  (req, res) => {
-    const user_id = req.user.id;
-    const { course_id } = req.body;
-    const sql = `INSERT INTO enrollments (user_id, course_id) VALUES (?, ?)`;
-    db.run(sql, [user_id, course_id], function (err) {
-      if (err) {
-        console.error("Error inserting enrollment:", err);
-        return res
-          .status(500)
-          .json({ message: "Error enrolling in course", error: err.message });
-      }
-      res
-        .status(201)
-        .json({ message: "Enrollment successful", enrollmentId: this.lastID });
-    });
-  }
-);
 
 // Retrieve the courses the logged-in user is enrolled in.
 router.get("/enrollments", authenticateToken, (req, res) => {
