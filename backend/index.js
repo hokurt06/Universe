@@ -195,8 +195,8 @@ const router = express.Router();
  *    - Required Fields: username, password, first_name, last_name, email.
  *
  * 2. POST /login
- *    - Description: Log in an existing user.
- *    - Required Fields: username, password.
+ *    - Description: Log in an existing user using email and password.
+ *    - Required Fields: email, password.
  *
  * 3. GET /profile
  *    - Description: Retrieve the profile of the currently logged-in user.
@@ -221,7 +221,6 @@ const router = express.Router();
  * 8. GET /grades
  *    - Description: Retrieve all grades.
  *    - Authentication: Required.
- *
  *
  * 9. GET /enrollments
  *    - Description: Retrieve the courses the logged-in user is enrolled in.
@@ -273,29 +272,27 @@ router.post(
   }
 );
 
-// Login an existing user and return a JWT token.
-router.post("/login", requireFields(["username", "password"]), (req, res) => {
-  const { username, password } = req.body;
+// Login an existing user and return a JWT token using email and password.
+router.post("/login", requireFields(["email", "password"]), (req, res) => {
+  const { email, password } = req.body;
 
-  const sql = `SELECT * FROM users WHERE username = ?`;
-  db.get(sql, [username], async (err, user) => {
+  const sql = `SELECT * FROM users WHERE email = ?`;
+  db.get(sql, [email], async (err, user) => {
     if (err) {
       console.error("Error querying user:", err);
       return res.status(500).json({ message: "Internal server error" });
     }
     if (!user) {
-      return res.status(400).json({ message: "Invalid username or password" });
+      return res.status(400).json({ message: "Invalid email or password" });
     }
 
     try {
       const passwordValid = await bcrypt.compare(password, user.password_hash);
       if (!passwordValid) {
-        return res
-          .status(400)
-          .json({ message: "Invalid username or password" });
+        return res.status(400).json({ message: "Invalid email or password" });
       }
       // Create a JWT token (expires in 1 week)
-      const payload = { id: user.id, username: user.username, role: user.role };
+      const payload = { id: user.id, email: user.email, role: user.role };
       const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "1w" });
       res.json({ message: "Login successful", token });
     } catch (error) {
@@ -448,6 +445,23 @@ router.get("/protected", authenticateToken, (req, res) => {
 // Mount the API Router with a Prefix
 // ================================================
 app.use(API_PREFIX, router);
+
+// ================================================
+// Generic JSON Error Handlers
+// ================================================
+
+// Catch-all for 404 - Not Found
+app.use((req, res, next) => {
+  res.status(404).json({ error: "Not Found" });
+});
+
+// Global error handler for 400 and 500 errors.
+app.use((err, req, res, next) => {
+  console.error(err);
+  const status = err.status || 500;
+  const message = err.message || "Internal Server Error";
+  res.status(status).json({ error: message });
+});
 
 // ================================================
 // Start the Server
