@@ -22,6 +22,12 @@ const LoginScreen: React.FC = () => {
         value={password}
         onChangeText={setPassword}
       />
+
+      {/* Sign In Button */}
+      <TouchableOpacity style={styles.signInButton} onPress={() => console.log('Sign In Pressed')}>
+        <Text style={styles.signInButtonText}>Sign In</Text>
+      </TouchableOpacity>
+
       <View style={styles.linksContainer}>
         <TouchableOpacity>
           <Text style={styles.linkText}>Forgot Password?</Text>
@@ -52,6 +58,19 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     fontSize: 16,
     color: '#333',
+  },
+  signInButton: {
+    backgroundColor: '#007bff',  // Blue for Sign In
+    width: '100%',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  signInButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   linksContainer: {
     marginTop: 10,
