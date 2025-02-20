@@ -8,7 +8,7 @@ import {
   Image,
   Alert,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, Stack } from "expo-router"; // Note the import of Stack
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const LoginScreen: React.FC = () => {
@@ -22,18 +22,14 @@ const LoginScreen: React.FC = () => {
       Alert.alert("Error", "Please enter both email and password.");
       return;
     }
-
     setLoading(true);
-
     try {
       const response = await fetch("http://localhost:3000/api/v1/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-
       const data = await response.json();
-
       if (response.ok) {
         await AsyncStorage.setItem("authToken", data.token);
         router.replace("/home");
@@ -49,51 +45,55 @@ const LoginScreen: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Image
-        source={require("../../assets/images/logo1.png")}
-        style={styles.logo}
+    <>
+      {/* This configuration hides both the header and the tab bar */}
+      <Stack.Screen
+        options={{
+          headerShown: false,
+        }}
       />
-
-      <TextInput
-        style={styles.input}
-        placeholder="email"
-        placeholderTextColor="#aaa"
-        value={email}
-        onChangeText={setemail}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        placeholderTextColor="#aaa"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
-
-      <TouchableOpacity
-        style={styles.signInButton}
-        onPress={handleSignIn}
-        disabled={loading}
-      >
-        <Text style={styles.signInButtonText}>
-          {loading ? "Signing In..." : "Sign In"}
-        </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity>
-        <Text style={styles.linkText}>Forgot Password?</Text>
-      </TouchableOpacity>
-
-      <View style={styles.bottomContainer}>
-        <TouchableOpacity>
-          <Text style={styles.signUpText}>
-            Don't have an account?{" "}
-            <Text style={styles.signUpLink}>Sign up</Text>
+      <View style={styles.container}>
+        <Image
+          source={require("../../assets/images/logo1.png")}
+          style={styles.logo}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="email"
+          placeholderTextColor="#aaa"
+          value={email}
+          onChangeText={setemail}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          placeholderTextColor="#aaa"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
+        <TouchableOpacity
+          style={styles.signInButton}
+          onPress={handleSignIn}
+          disabled={loading}
+        >
+          <Text style={styles.signInButtonText}>
+            {loading ? "Signing In..." : "Sign In"}
           </Text>
         </TouchableOpacity>
+        <TouchableOpacity>
+          <Text style={styles.linkText}>Forgot Password?</Text>
+        </TouchableOpacity>
+        <View style={styles.bottomContainer}>
+          <TouchableOpacity>
+            <Text style={styles.signUpText}>
+              Don't have an account?{" "}
+              <Text style={styles.signUpLink}>Sign up</Text>
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </>
   );
 };
 
