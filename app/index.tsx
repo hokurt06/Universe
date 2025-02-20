@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Image,
   Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
@@ -18,6 +17,7 @@ const LoginScreen: React.FC = () => {
   const router = useRouter();
 
   const handleSignIn = async () => {
+    // Check if both email and password are provided
     if (!email || !password) {
       Alert.alert("Error", "Please enter both email and password.");
       return;
@@ -34,9 +34,10 @@ const LoginScreen: React.FC = () => {
 
       const data = await response.json();
 
+      // If response is ok, save the token and navigate to the home tab
       if (response.ok) {
         await AsyncStorage.setItem("authToken", data.token);
-        router.replace("/(tabs)/home"); 
+        router.replace("/(tabs)/home"); // Redirect to home tab after login
       } else {
         Alert.alert("Login Failed", data.message || "Invalid credentials");
       }
@@ -50,7 +51,6 @@ const LoginScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-
       <TextInput
         style={styles.input}
         placeholder="Email"
@@ -103,7 +103,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     padding: 20,
   },
-  logo: { width: 150, height: 150, borderRadius: 75 },
   input: {
     width: "100%",
     height: 50,
