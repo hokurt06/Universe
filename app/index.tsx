@@ -50,8 +50,10 @@ const LoginScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-   <Image source={require("../../assets/images/logo1.png")} style={styles.logo} />
-
+      <Image
+        source={require("../assets/images/logo1.png")}
+        style={styles.logo}
+      />
 
       <TextInput
         style={styles.input}
