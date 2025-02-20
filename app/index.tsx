@@ -36,7 +36,7 @@ const LoginScreen: React.FC = () => {
 
       if (response.ok) {
         await AsyncStorage.setItem("authToken", data.token);
-        router.replace("/(tabs)/home"); // Redirects to the tab layout
+        router.replace("/(tabs)/home"); 
       } else {
         Alert.alert("Login Failed", data.message || "Invalid credentials");
       }
@@ -50,15 +50,12 @@ const LoginScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Image
-        source={require("../assets/images/logo1.png")}
-        style={styles.logo}
-      />
 
       <TextInput
         style={styles.input}
         placeholder="Email"
         placeholderTextColor="#aaa"
+        autoCapitalize="none"
         value={email}
         onChangeText={setEmail}
       />
@@ -66,6 +63,7 @@ const LoginScreen: React.FC = () => {
         style={styles.input}
         placeholder="Password"
         placeholderTextColor="#aaa"
+        autoCapitalize="none"
         secureTextEntry
         value={password}
         onChangeText={setPassword}
