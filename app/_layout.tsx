@@ -31,7 +31,7 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack screenOptions={{ headerShown: false }}>
-        {/* ✅ index.tsx (Login Screen) will be the first screen */}
+        {}
         <Stack.Screen name="index" />
       </Stack>
       <StatusBar style="auto" />

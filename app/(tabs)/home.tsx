@@ -8,7 +8,7 @@ const HomeScreen = () => {
 
   const handleLogout = async () => {
     await AsyncStorage.removeItem("authToken");
-    router.replace("/"); // Redirects to login screen
+    router.replace("/"); 
   };
 
   return (
