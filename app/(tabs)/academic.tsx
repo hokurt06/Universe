@@ -25,7 +25,7 @@ const AcademicScreen: React.FC = () => {
         </Text>
       </View>
 
-      {/* Term Dropdown replaced with a custom modal */}
+      
       <TouchableOpacity style={styles.dropdownButton} onPress={() => setShowTermModal(true)}>
         <Text style={styles.dropdownText}>{selectedTerm} ▼</Text>
       </TouchableOpacity>
