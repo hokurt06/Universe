@@ -710,7 +710,7 @@ router.post("/sample_data", authenticateToken, (req, res) => {
     },
   ];
 
-  // Insert sample advisor for user with title
+  // Insert sample advisor for user with title​
   db.run(
     `INSERT INTO advisors (user_id, title, name, phone_number, office_address, office_hours)
      VALUES (?, ?, ?, ?, ?, ?)`,
