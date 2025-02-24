@@ -1,9 +1,16 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from "react-native";
+import { useNavigation, NavigationProp } from '@react-navigation/native';
+type RootStackParamList = {
+  Advisors: undefined;
+  // Add other routes here if necessary
+};
 
 const AcademicScreen: React.FC = () => {
   const [selectedTerm, setSelectedTerm] = useState<string>("Fall 2024");
   const [showTermModal, setShowTermModal] = useState<boolean>(false);
+
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
   // Term options
   const termOptions = [
@@ -63,6 +70,11 @@ const AcademicScreen: React.FC = () => {
           </View>
         ))}
       </ScrollView>
+
+      {/* Button to Navigate to Advisors Screen */}
+      <TouchableOpacity style={styles.advisorsButton} onPress={() => navigation.navigate('Advisors')}>
+        <Text style={styles.advisorsButtonText}>View Advisors</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -193,6 +205,20 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   closeButtonText: {
+    fontSize: 18,
+    fontWeight: "500",
+    color: "#FFFFFF",
+  },
+  advisorsButton: {
+    backgroundColor: "#007AFF",
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 12,
+    marginTop: 20,
+    width: "90%",
+    alignItems: "center",
+  },
+  advisorsButtonText: {
     fontSize: 18,
     fontWeight: "500",
     color: "#FFFFFF",
