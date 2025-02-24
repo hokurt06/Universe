@@ -20,12 +20,10 @@ export default function TabLayout() {
     >
       {/* Home Tab */}
       <Tabs.Screen name="home" options={{ title: "Home" }} />
-      {/* Academic Tab */}
+      {/* Academic Tab (Now includes Advisors) */}
       <Tabs.Screen name="academic" options={{ title: "Academic" }} />
       {/* Schedule Tab */}
       <Tabs.Screen name="schedule" options={{ title: "Schedule" }} />
-      {/* Advisor Tab */}
-      <Tabs.Screen name="advisor" options={{ title: "Advisor" }} />
     </Tabs>
   );
 }
