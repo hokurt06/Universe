@@ -53,7 +53,7 @@ const AcademicScreen: React.FC = () => {
         </View>
       </Modal>
 
-      {/* Class List */}
+      {}
       <ScrollView style={styles.classesContainer} showsVerticalScrollIndicator={false}>
         {Array.from({ length: 7 }).map((_, index) => (
           <View key={index} style={styles.classCard}>
