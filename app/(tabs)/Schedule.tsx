@@ -1,40 +1,88 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from "react-native";
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Modal,
+} from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const CourseSchedule: React.FC = () => {
   const [selectedClass, setSelectedClass] = useState<number | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [selectedTerm, setSelectedTerm] = useState<string>("Fall 2024");
+  const [selectedTerm, setSelectedTerm] = useState<string>("");
+  const [terms, setTerms] = useState<{ key: string; label: string }[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
 
-  const courses = [
-    {
-      id: 1,
-      name: "Placeholder Class",
-      professor: "Placeholder Professor",
-      credits: 3,
-      location: "Room Placeholder",
-      time: "Time Placeholder",
-    },
-    {
-      id: 2,
-      name: "Placeholder Class",
-      professor: "Placeholder Professor",
-      credits: 4,
-      location: "Room Placeholder",
-      time: "Time Placeholder",
-    },
-    {
-      id: 3,
-      name: "Placeholder Class",
-      professor: "Placeholder Professor",
-      credits: 3,
-      location: "Room Placeholder",
-      time: "Time Placeholder",
-    },
-  ];
+  // Fetch terms from the API
+  useEffect(() => {
+    const fetchTerms = async () => {
+      try {
+        const token = await AsyncStorage.getItem("authToken");
+        if (token) {
+          const response = await fetch("http://localhost:3000/api/v1/terms", {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          const data = await response.json();
+          if (data.terms && Array.isArray(data.terms)) {
+            const termOptions = data.terms.map((term: string) => ({
+              key: term,
+              label: term,
+            }));
+            setTerms(termOptions);
+            if (!selectedTerm && termOptions.length > 0) {
+              setSelectedTerm(termOptions[0].label);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching terms:", error);
+      }
+    };
 
-  const openModal = (id: number) => {
-    setSelectedClass(id);
+    fetchTerms();
+  }, [selectedTerm]);
+
+  // Fetch user's enrollments (schedule data) from the API
+  useEffect(() => {
+    const fetchEnrollments = async () => {
+      try {
+        const token = await AsyncStorage.getItem("authToken");
+        if (token) {
+          const response = await fetch(
+            "http://localhost:3000/api/v1/enrollments",
+            {
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          const data = await response.json();
+          if (data.enrollments) {
+            setCourses(data.enrollments);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching enrollments:", error);
+      }
+    };
+
+    fetchEnrollments();
+  }, []);
+
+  // Filter courses based on the selected term (quarter)
+  const coursesForTerm = courses.filter(
+    (course) => course.quarter === selectedTerm
+  );
+
+  const openModal = (enrollmentId: number) => {
+    setSelectedClass(enrollmentId);
     setShowModal(true);
   };
 
@@ -43,24 +91,45 @@ const CourseSchedule: React.FC = () => {
     setSelectedClass(null);
   };
 
-  const selectedCourse = courses.find(course => course.id === selectedClass);
+  const selectedCourse = coursesForTerm.find(
+    (course) => course.enrollment_id === selectedClass
+  );
 
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Course Schedule</Text>
-      <Text style={styles.subHeader}>Term: {selectedTerm}</Text>
-      <ScrollView style={styles.classesContainer} showsVerticalScrollIndicator={false}>
-        {courses.map(course => (
-          <TouchableOpacity
-            key={course.id}
-            style={styles.classCard}
-            onPress={() => openModal(course.id)}
-          >
-            <Text style={styles.classText}>{course.name}</Text>
-            <Text style={styles.timeText}>{course.time}</Text>
-            <Text style={styles.locationText}>{course.location}</Text>
-          </TouchableOpacity>
-        ))}
+      <Text style={styles.subHeader}>Term: {selectedTerm || "Loading..."}</Text>
+
+      {/* Term selection could be implemented similarly to AcademicScreen if needed */}
+
+      <ScrollView
+        style={styles.classesContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {coursesForTerm.length > 0 ? (
+          coursesForTerm.map((course) => (
+            <TouchableOpacity
+              key={course.enrollment_id}
+              style={styles.classCard}
+              onPress={() => openModal(course.enrollment_id)}
+            >
+              <Text style={styles.classText}>
+                {course.title} ({course.course_code})
+              </Text>
+              <Text style={styles.timeText}>
+                Section: {course.section_identifier}
+              </Text>
+              <Text style={styles.timeText}>Time: {course.meeting_time}</Text>
+              <Text style={styles.locationText}>
+                Location: {course.location_address}
+              </Text>
+            </TouchableOpacity>
+          ))
+        ) : (
+          <Text style={styles.noCoursesText}>
+            No courses found for {selectedTerm}
+          </Text>
+        )}
       </ScrollView>
 
       {showModal && selectedCourse && (
@@ -69,13 +138,38 @@ const CourseSchedule: React.FC = () => {
             <View style={styles.modalContent}>
               <Text style={styles.modalHeader}>Class Information</Text>
               <Text style={styles.modalText}>
-                Professor: <Text style={styles.boldText}>{selectedCourse.professor}</Text>
+                Course:{" "}
+                <Text style={styles.boldText}>
+                  {selectedCourse.title} ({selectedCourse.course_code})
+                </Text>
               </Text>
               <Text style={styles.modalText}>
-                Location: <Text style={styles.boldText}>{selectedCourse.location}</Text>
+                Section:{" "}
+                <Text style={styles.boldText}>
+                  {selectedCourse.section_identifier}{" "}
+                  {selectedCourse.class_type
+                    ? `(${selectedCourse.class_type})`
+                    : ""}
+                </Text>
               </Text>
               <Text style={styles.modalText}>
-                Time: <Text style={styles.boldText}>{selectedCourse.time}</Text>
+                Meeting Time:{" "}
+                <Text style={styles.boldText}>
+                  {selectedCourse.meeting_time}
+                </Text>
+              </Text>
+              <Text style={styles.modalText}>
+                Location:{" "}
+                <Text style={styles.boldText}>
+                  {selectedCourse.location_address}
+                </Text>
+              </Text>
+              <Text style={styles.modalText}>
+                Professor:{" "}
+                <Text style={styles.boldText}>
+                  {selectedCourse.section_professor ||
+                    selectedCourse.offering_professor}
+                </Text>
               </Text>
               <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
                 <Text style={styles.closeButtonText}>Close</Text>
@@ -134,6 +228,12 @@ const styles = StyleSheet.create({
   locationText: {
     fontSize: 16,
     color: "#555",
+  },
+  noCoursesText: {
+    fontSize: 18,
+    color: "#666",
+    textAlign: "center",
+    marginTop: 20,
   },
   modalOverlay: {
     flex: 1,

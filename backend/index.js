@@ -5,15 +5,14 @@ const sqlite3 = require("sqlite3").verbose();
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const nodemailer = require("nodemailer");
-
-require("dotenv").config();
+const fs = require("fs");
+const csvParser = require("csv-parser");
 
 const app = express();
 
 // ================================================
 // Environment Configuration
 // ================================================
-
 const config = {
   environment: process.env.ENVIRONMENT,
   port: process.env.PORT,
@@ -22,7 +21,6 @@ const config = {
   apiPrefix: process.env.API_PREFIX,
 };
 
-// Ensure config has been set for all keys.
 for (const key in config) {
   if (!config[key]) {
     console.error(`Missing configuration for ${key}`);
@@ -40,13 +38,6 @@ app.use(express.json());
 // ================================================
 // Helper Middleware: Field Validation
 // ================================================
-
-/**
- * requireFields(fields: Array<string>)
- *
- * Middleware that checks if the request body contains all required fields.
- * If any field is missing, responds with a 400 error listing the missing fields.
- */
 function requireFields(fields) {
   return (req, res, next) => {
     const missing = fields.filter(
@@ -68,7 +59,6 @@ function requireFields(fields) {
 // ================================================
 // Initialize SQLite Database
 // ================================================
-
 console.log(`Connecting to the SQLite database (${config.database})...`);
 
 const db = new sqlite3.Database(config.database, (err) => {
@@ -79,7 +69,6 @@ const db = new sqlite3.Database(config.database, (err) => {
   }
 });
 
-// Create necessary tables if they do not exist.
 db.serialize(() => {
   // Users table
   db.run(
@@ -120,22 +109,43 @@ db.serialize(() => {
     }
   );
 
-  // Grades table
+  // Course Offerings table
   db.run(
     `
-    CREATE TABLE IF NOT EXISTS grades (
+    CREATE TABLE IF NOT EXISTS course_offerings (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
       course_id INTEGER NOT NULL,
-      grade TEXT,
+      quarter TEXT NOT NULL,
+      location_name TEXT,
+      location_address TEXT,
+      professor_name TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id),
       FOREIGN KEY (course_id) REFERENCES courses(id)
     )
   `,
     (err) => {
-      if (err) console.error("Error creating grades table:", err);
-      else console.log("Grades table ensured.");
+      if (err) console.error("Error creating course_offerings table:", err);
+      else console.log("Course offerings table ensured.");
+    }
+  );
+
+  // Sections table
+  db.run(
+    `
+    CREATE TABLE IF NOT EXISTS sections (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      course_offering_id INTEGER NOT NULL,
+      section_identifier TEXT,
+      class_type TEXT,
+      meeting_time TEXT,
+      professor_name TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (course_offering_id) REFERENCES course_offerings(id)
+    )
+  `,
+    (err) => {
+      if (err) console.error("Error creating sections table:", err);
+      else console.log("Sections table ensured.");
     }
   );
 
@@ -145,10 +155,11 @@ db.serialize(() => {
     CREATE TABLE IF NOT EXISTS enrollments (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
-      course_id INTEGER NOT NULL,
+      course_offering_id INTEGER NOT NULL,
+      grade REAL,
       enrolled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id),
-      FOREIGN KEY (course_id) REFERENCES courses(id)
+      FOREIGN KEY (course_offering_id) REFERENCES course_offerings(id)
     )
   `,
     (err) => {
@@ -156,18 +167,32 @@ db.serialize(() => {
       else console.log("Enrollments table ensured.");
     }
   );
+
+  // Advisors table – Updated to include the "title" column
+  db.run(
+    `
+    CREATE TABLE IF NOT EXISTS advisors (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      name TEXT NOT NULL,
+      phone_number TEXT,
+      office_address TEXT,
+      office_hours TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `,
+    (err) => {
+      if (err) console.error("Error creating advisors table:", err);
+      else console.log("Advisors table ensured.");
+    }
+  );
 });
 
 // ================================================
 // JWT Authentication Middleware
 // ================================================
-
-/**
- * authenticateToken
- *
- * Middleware that checks for a JWT token in the Authorization header.
- * If valid, the decoded payload is attached to req.user.
- */
 function authenticateToken(req, res, next) {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
@@ -184,66 +209,43 @@ function authenticateToken(req, res, next) {
 // ================================================
 // API Router
 // ================================================
-
 const router = express.Router();
 
 /**
  * API Documentation:
  *
- * 1. POST /register
- *    - Description: Register a new user.
- *    - Required Fields: username, password, first_name, last_name, email.
- *
- * 2. POST /login
- *    - Description: Log in an existing user using email and password.
- *    - Required Fields: email, password.
- *
- * 3. GET /profile
- *    - Description: Retrieve the profile of the currently logged-in user.
- *    - Authentication: Required.
- *
- * 4. POST /courses
- *    - Description: Create a new course.
- *    - Required Fields: course_code, title, credits.
- *    - Authentication: Required.
- *
- * 5. GET /courses
- *    - Description: Retrieve all courses.
- *
- * 6. GET /courses/:id
- *    - Description: Retrieve a specific course by its ID.
- *
- * 7. POST /grades
- *    - Description: Add a grade for a user in a course.
- *    - Required Fields: user_id, course_id, grade.
- *    - Authentication: Required.
- *
- * 8. GET /grades
- *    - Description: Retrieve all grades.
- *    - Authentication: Required.
- *
- * 9. GET /enrollments
- *    - Description: Retrieve the courses the logged-in user is enrolled in.
- *    - Authentication: Required.
- *
- * 10. GET /protected
- *    - Description: A test endpoint to verify token validity.
- *    - Authentication: Required.
+ * 1. POST /register - Register a new user.
+ * 2. POST /login - Log in and receive a JWT token.
+ * 3. GET /profile - Get the logged-in user's profile.
+ * 4. POST /courses - Create a new course.
+ * 5. GET /courses - Retrieve all courses.
+ * 6. GET /courses/:id - Retrieve a specific course by its ID.
+ * 7. POST /course_offerings - Create a course offering.
+ * 8. GET /course_offerings - Retrieve all course offerings.
+ * 9. GET /course_offerings/:id - Retrieve a specific course offering.
+ * 10. POST /sections - Create a new section.
+ * 11. GET /sections - Retrieve sections.
+ * 12. GET /sections/:id - Retrieve a specific section.
+ * 13. POST /enrollments - Enroll the user in a course offering.
+ * 14. GET /enrollments - Retrieve the user's enrollments with detailed info.
+ * 15. POST /advisors - Create a new advisor (with title).
+ * 16. GET /advisors - Retrieve the user's advisors.
+ * 17. GET /terms - Get distinct terms where the user has enrollments.
+ * 18. POST /sample_data - Insert sample advisor and course data.
+ * 19. GET /protected - Protected test endpoint.
  */
 
 // --- User Endpoints ---
 
-// Register a new user.
 router.post(
   "/register",
   requireFields(["username", "password", "first_name", "last_name", "email"]),
   async (req, res) => {
     const { username, password, first_name, last_name, email, role } = req.body;
-
     try {
       const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
       const sql = `INSERT INTO users (username, password_hash, first_name, last_name, email, role)
-                 VALUES (?, ?, ?, ?, ?, ?)`;
+                   VALUES (?, ?, ?, ?, ?, ?)`;
       const params = [
         username,
         password_hash,
@@ -272,10 +274,8 @@ router.post(
   }
 );
 
-// Login an existing user and return a JWT token using email and password.
 router.post("/login", requireFields(["email", "password"]), (req, res) => {
   const { email, password } = req.body;
-
   const sql = `SELECT * FROM users WHERE email = ?`;
   db.get(sql, [email], async (err, user) => {
     if (err) {
@@ -291,7 +291,6 @@ router.post("/login", requireFields(["email", "password"]), (req, res) => {
       if (!passwordValid) {
         return res.status(400).json({ message: "Invalid email or password" });
       }
-      // Create a JWT token (expires in 1 week)
       const payload = { id: user.id, email: user.email, role: user.role };
       const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "1w" });
       res.json({ message: "Login successful", token });
@@ -302,7 +301,6 @@ router.post("/login", requireFields(["email", "password"]), (req, res) => {
   });
 });
 
-// Get the profile of the logged-in user.
 router.get("/profile", authenticateToken, (req, res) => {
   const userId = req.user.id;
   const sql = `SELECT id, username, first_name, last_name, email, role, created_at FROM users WHERE id = ?`;
@@ -320,10 +318,8 @@ router.get("/profile", authenticateToken, (req, res) => {
 
 // --- Courses Endpoints ---
 
-// Create a new course.
 router.post(
   "/courses",
-  authenticateToken,
   requireFields(["course_code", "title", "credits"]),
   (req, res) => {
     const { course_code, title, description, credits } = req.body;
@@ -344,7 +340,6 @@ router.post(
   }
 );
 
-// Retrieve all courses.
 router.get("/courses", (req, res) => {
   const sql = `SELECT * FROM courses`;
   db.all(sql, [], (err, rows) => {
@@ -358,7 +353,6 @@ router.get("/courses", (req, res) => {
   });
 });
 
-// Retrieve a specific course by its ID.
 router.get("/courses/:id", (req, res) => {
   const sql = `SELECT * FROM courses WHERE id = ?`;
   db.get(sql, [req.params.id], (err, row) => {
@@ -373,70 +367,501 @@ router.get("/courses/:id", (req, res) => {
   });
 });
 
-// --- Grades Endpoints ---
+// --- Course Offerings Endpoints ---
 
-// Add a grade for a user in a course.
 router.post(
-  "/grades",
+  "/course_offerings",
   authenticateToken,
-  requireFields(["user_id", "course_id", "grade"]),
+  requireFields(["course_id", "quarter"]),
   (req, res) => {
-    const { user_id, course_id, grade } = req.body;
-    const sql = `INSERT INTO grades (user_id, course_id, grade) VALUES (?, ?, ?)`;
-    const params = [user_id, course_id, grade];
+    const {
+      course_id,
+      quarter,
+      location_name,
+      location_address,
+      professor_name,
+    } = req.body;
+    const sql = `INSERT INTO course_offerings (course_id, quarter, location_name, location_address, professor_name)
+                 VALUES (?, ?, ?, ?, ?)`;
+    const params = [
+      course_id,
+      quarter,
+      location_name || null,
+      location_address || null,
+      professor_name || null,
+    ];
     db.run(sql, params, function (err) {
       if (err) {
-        console.error("Error inserting grade:", err);
-        return res
-          .status(500)
-          .json({ message: "Error adding grade", error: err.message });
+        console.error("Error inserting course offering:", err);
+        return res.status(500).json({
+          message: "Error creating course offering",
+          error: err.message,
+        });
       }
-      res
-        .status(201)
-        .json({ message: "Grade added successfully", gradeId: this.lastID });
+      res.status(201).json({
+        message: "Course offering created successfully",
+        courseOfferingId: this.lastID,
+      });
     });
   }
 );
 
-// Retrieve all grades.
-router.get("/grades", authenticateToken, (req, res) => {
-  const sql = `SELECT * FROM grades`;
+router.get("/course_offerings", (req, res) => {
+  const sql = `
+    SELECT co.*, c.course_code, c.title, c.description, c.credits
+    FROM course_offerings co
+    JOIN courses c ON co.course_id = c.id
+  `;
   db.all(sql, [], (err, rows) => {
     if (err) {
-      console.error("Error fetching grades:", err);
+      console.error("Error fetching course offerings:", err);
+      return res.status(500).json({
+        message: "Error fetching course offerings",
+        error: err.message,
+      });
+    }
+    res.json({ course_offerings: rows });
+  });
+});
+
+router.get("/course_offerings/:id", (req, res) => {
+  const sql = `
+    SELECT co.*, c.course_code, c.title, c.description, c.credits
+    FROM course_offerings co
+    JOIN courses c ON co.course_id = c.id
+    WHERE co.id = ?
+  `;
+  db.get(sql, [req.params.id], (err, row) => {
+    if (err) {
+      console.error("Error fetching course offering:", err);
+      return res.status(500).json({
+        message: "Error fetching course offering",
+        error: err.message,
+      });
+    }
+    if (!row)
+      return res.status(404).json({ message: "Course offering not found" });
+    res.json({ course_offering: row });
+  });
+});
+
+// --- Sections Endpoints ---
+
+router.post(
+  "/sections",
+  authenticateToken,
+  requireFields(["course_offering_id"]),
+  (req, res) => {
+    const {
+      course_offering_id,
+      section_identifier,
+      class_type,
+      meeting_time,
+      professor_name,
+    } = req.body;
+    const sql = `INSERT INTO sections (course_offering_id, section_identifier, class_type, meeting_time, professor_name)
+                 VALUES (?, ?, ?, ?, ?)`;
+    const params = [
+      course_offering_id,
+      section_identifier || null,
+      class_type || null,
+      meeting_time || null,
+      professor_name || null,
+    ];
+    db.run(sql, params, function (err) {
+      if (err) {
+        console.error("Error inserting section:", err);
+        return res.status(500).json({
+          message: "Error creating section",
+          error: err.message,
+        });
+      }
+      res.status(201).json({
+        message: "Section created successfully",
+        sectionId: this.lastID,
+      });
+    });
+  }
+);
+
+router.get("/sections", (req, res) => {
+  let sql = `SELECT * FROM sections`;
+  let params = [];
+  if (req.query.course_offering_id) {
+    sql += ` WHERE course_offering_id = ?`;
+    params.push(req.query.course_offering_id);
+  }
+  db.all(sql, params, (err, rows) => {
+    if (err) {
+      console.error("Error fetching sections:", err);
+      return res.status(500).json({
+        message: "Error fetching sections",
+        error: err.message,
+      });
+    }
+    res.json({ sections: rows });
+  });
+});
+
+router.get("/sections/:id", (req, res) => {
+  const sql = `SELECT * FROM sections WHERE id = ?`;
+  db.get(sql, [req.params.id], (err, row) => {
+    if (err) {
+      console.error("Error fetching section:", err);
       return res
         .status(500)
-        .json({ message: "Error fetching grades", error: err.message });
+        .json({ message: "Error fetching section", error: err.message });
     }
-    res.json({ grades: rows });
+    if (!row) return res.status(404).json({ message: "Section not found" });
+    res.json({ section: row });
   });
 });
 
 // --- Enrollments Endpoints ---
 
-// Retrieve the courses the logged-in user is enrolled in.
+router.post(
+  "/enrollments",
+  authenticateToken,
+  requireFields(["course_offering_id"]),
+  (req, res) => {
+    const { course_offering_id, grade } = req.body;
+    const user_id = req.user.id;
+    const sql = `INSERT INTO enrollments (user_id, course_offering_id, grade) VALUES (?, ?, ?)`;
+    const params = [user_id, course_offering_id, grade || null];
+    db.run(sql, params, function (err) {
+      if (err) {
+        console.error("Error inserting enrollment:", err);
+        return res.status(500).json({
+          message: "Error enrolling",
+          error: err.message,
+        });
+      }
+      res.status(201).json({
+        message: "Enrollment added successfully",
+        enrollmentId: this.lastID,
+      });
+    });
+  }
+);
+
 router.get("/enrollments", authenticateToken, (req, res) => {
   const user_id = req.user.id;
   const sql = `
-    SELECT e.id AS enrollment_id, c.*
+    SELECT 
+      e.id as enrollment_id, 
+      e.grade, 
+      e.enrolled_at,
+      co.id as course_offering_id, 
+      co.quarter, 
+      co.location_name, 
+      co.location_address, 
+      co.professor_name as offering_professor,
+      c.course_code, 
+      c.title, 
+      c.description, 
+      c.credits,
+      s.section_identifier, 
+      s.meeting_time, 
+      s.class_type, 
+      s.professor_name as section_professor
     FROM enrollments e
-    JOIN courses c ON e.course_id = c.id
+    JOIN course_offerings co ON e.course_offering_id = co.id
+    JOIN courses c ON co.course_id = c.id
+    LEFT JOIN sections s ON co.id = s.course_offering_id
     WHERE e.user_id = ?
   `;
   db.all(sql, [user_id], (err, rows) => {
     if (err) {
       console.error("Error fetching enrollments:", err);
-      return res
-        .status(500)
-        .json({ message: "Error fetching enrollments", error: err.message });
+      return res.status(500).json({
+        message: "Error fetching enrollments",
+        error: err.message,
+      });
     }
     res.json({ enrollments: rows });
   });
 });
 
-// --- Test Endpoint ---
+// --- Advisors Endpoints ---
 
-// A simple protected endpoint to test token validity.
+router.post(
+  "/advisors",
+  authenticateToken,
+  requireFields(["title", "name"]),
+  (req, res) => {
+    const user_id = req.user.id;
+    const { title, name, phone_number, office_address, office_hours } =
+      req.body;
+    const sql = `INSERT INTO advisors (user_id, title, name, phone_number, office_address, office_hours)
+               VALUES (?, ?, ?, ?, ?, ?)`;
+    const params = [
+      user_id,
+      title,
+      name,
+      phone_number || null,
+      office_address || null,
+      office_hours || null,
+    ];
+    db.run(sql, params, function (err) {
+      if (err) {
+        console.error("Error inserting advisor:", err);
+        return res.status(500).json({
+          message: "Error adding advisor",
+          error: err.message,
+        });
+      }
+      res.status(201).json({
+        message: "Advisor added successfully",
+        advisorId: this.lastID,
+      });
+    });
+  }
+);
+
+router.get("/advisors", authenticateToken, (req, res) => {
+  const user_id = req.user.id;
+  const sql = `SELECT * FROM advisors WHERE user_id = ?`;
+  db.all(sql, [user_id], (err, rows) => {
+    if (err) {
+      console.error("Error fetching advisors:", err);
+      return res.status(500).json({
+        message: "Error fetching advisors",
+        error: err.message,
+      });
+    }
+    res.json({ advisors: rows });
+  });
+});
+
+// --- Terms Endpoint ---
+
+router.get("/terms", authenticateToken, (req, res) => {
+  const userId = req.user.id;
+  const sql = `
+    SELECT DISTINCT co.quarter AS term
+    FROM enrollments e
+    JOIN course_offerings co ON e.course_offering_id = co.id
+    WHERE e.user_id = ?
+  `;
+  db.all(sql, [userId], (err, rows) => {
+    if (err) {
+      console.error("Error fetching terms:", err);
+      return res.status(500).json({
+        message: "Error fetching terms",
+        error: err.message,
+      });
+    }
+    const terms = rows.map((row) => row.term);
+    res.json({ terms });
+  });
+});
+
+// --- Sample Data Endpoint ---
+
+router.post("/sample_data", authenticateToken, (req, res) => {
+  const userId = req.user.id;
+  let responseSent = false;
+
+  const sendResponse = (result) => {
+    if (!responseSent) {
+      responseSent = true;
+      res.json(result);
+    }
+  };
+
+  const sendError = (message, err) => {
+    if (!responseSent) {
+      responseSent = true;
+      res.status(500).json({ message, error: err.message });
+    }
+  };
+
+  // Sample courses data with different terms
+  const sampleCourses = [
+    {
+      course_code: "CS101",
+      title: "Introduction to Computer Science",
+      term: "Fall 2024",
+      location_name: "Main Campus",
+      location_address: "123 University Ave",
+      professor: "Prof. Alice",
+      section: "A",
+      meeting_time: "MWF 9:00-10:00",
+    },
+    {
+      course_code: "MATH101",
+      title: "Calculus I",
+      term: "Winter 2025",
+      location_name: "North Campus",
+      location_address: "456 College Blvd",
+      professor: "Prof. Bob",
+      section: "B",
+      meeting_time: "TTh 10:00-11:30",
+    },
+    {
+      course_code: "PHYS101",
+      title: "Physics I",
+      term: "Spring 2025",
+      location_name: "South Campus",
+      location_address: "789 Science Rd",
+      professor: "Prof. Carol",
+      section: "C",
+      meeting_time: "MWF 11:00-12:00",
+    },
+  ];
+
+  // Insert sample advisor for user with title
+  db.run(
+    `INSERT INTO advisors (user_id, title, name, phone_number, office_address, office_hours)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [
+      userId,
+      "Academic Advisor",
+      "Dr. John Doe",
+      "555-1234",
+      "Room 101, Admin Building",
+      "MWF 12:00-1:00 PM",
+    ],
+    function (err) {
+      if (err) {
+        console.error("Error inserting advisor:", err);
+        return sendError("Error adding sample advisor", err);
+      }
+      // Process sample courses
+      let completed = 0;
+      sampleCourses.forEach((sample) => {
+        db.get(
+          `SELECT id FROM courses WHERE course_code = ?`,
+          [sample.course_code],
+          (err, row) => {
+            if (err) {
+              console.error(
+                `Error fetching course ${sample.course_code}:`,
+                err
+              );
+              return sendError(
+                `Error fetching course ${sample.course_code}`,
+                err
+              );
+            }
+            const processCourse = (courseId) => {
+              db.run(
+                `INSERT INTO course_offerings (course_id, quarter, location_name, location_address, professor_name)
+                 VALUES (?, ?, ?, ?, ?)`,
+                [
+                  courseId,
+                  sample.term,
+                  sample.location_name,
+                  sample.location_address,
+                  sample.professor,
+                ],
+                function (err) {
+                  if (err) {
+                    console.error(
+                      `Error inserting course offering for ${sample.course_code}:`,
+                      err
+                    );
+                    return sendError(
+                      `Error adding sample course offering for ${sample.course_code}`,
+                      err
+                    );
+                  }
+                  const courseOfferingId = this.lastID;
+                  db.run(
+                    `INSERT INTO enrollments (user_id, course_offering_id) VALUES (?, ?)`,
+                    [userId, courseOfferingId],
+                    (err) => {
+                      if (err) {
+                        console.error(
+                          `Error enrolling in ${sample.course_code}:`,
+                          err
+                        );
+                        return sendError(
+                          `Error enrolling sample course ${sample.course_code}`,
+                          err
+                        );
+                      }
+                      db.run(
+                        `INSERT INTO sections (course_offering_id, section_identifier, class_type, meeting_time, professor_name)
+                         VALUES (?, ?, ?, ?, ?)`,
+                        [
+                          courseOfferingId,
+                          sample.section,
+                          "Lecture",
+                          sample.meeting_time,
+                          sample.professor,
+                        ],
+                        (err) => {
+                          if (err) {
+                            console.error(
+                              `Error inserting section for ${sample.course_code}:`,
+                              err
+                            );
+                            return sendError(
+                              `Error adding sample section for ${sample.course_code}`,
+                              err
+                            );
+                          }
+                          completed++;
+                          if (completed === sampleCourses.length) {
+                            sendResponse({
+                              message: "Sample data added successfully",
+                            });
+                          }
+                        }
+                      );
+                    }
+                  );
+                }
+              );
+            };
+
+            if (row) {
+              processCourse(row.id);
+            } else {
+              db.run(
+                `INSERT OR IGNORE INTO courses (course_code, title, description, credits)
+                 VALUES (?, ?, ?, ?)`,
+                [sample.course_code, sample.title, "Fallback sample course", 3],
+                function (err) {
+                  if (err) {
+                    console.error(
+                      `Error inserting fallback course ${sample.course_code}:`,
+                      err
+                    );
+                    return sendError(
+                      `Error adding fallback sample course ${sample.course_code}`,
+                      err
+                    );
+                  }
+                  db.get(
+                    `SELECT id FROM courses WHERE course_code = ?`,
+                    [sample.course_code],
+                    (err, row2) => {
+                      if (err || !row2) {
+                        console.error(
+                          `Error fetching fallback course ${sample.course_code}:`,
+                          err
+                        );
+                        return sendError(
+                          `Error fetching fallback sample course ${sample.course_code}`,
+                          err || new Error("Course not found")
+                        );
+                      }
+                      processCourse(row2.id);
+                    }
+                  );
+                }
+              );
+            }
+          }
+        );
+      });
+    }
+  );
+});
+
+// --- Protected Test Endpoint ---
 router.get("/protected", authenticateToken, (req, res) => {
   res.json({ message: "You have accessed a protected route!", user: req.user });
 });
@@ -449,19 +874,47 @@ app.use(API_PREFIX, router);
 // ================================================
 // Generic JSON Error Handlers
 // ================================================
-
-// Catch-all for 404 - Not Found
 app.use((req, res, next) => {
   res.status(404).json({ error: "Not Found" });
 });
 
-// Global error handler for 400 and 500 errors.
 app.use((err, req, res, next) => {
   console.error(err);
   const status = err.status || 500;
   const message = err.message || "Internal Server Error";
   res.status(status).json({ error: message });
 });
+
+function importCoursesFromCSV(filePath) {
+  fs.createReadStream(filePath)
+    .pipe(csvParser())
+    .on("data", (row) => {
+      // Extract data from the CSV row. Adjust key names if your CSV header differs.
+      const courseCode = row["Course Code"];
+      const title = row["Title"];
+      const credits = row["Credits"]; // If credits are not a pure number, consider storing as TEXT.
+      const description = row["Description"];
+      // Optionally, you can also use the "College" field if desired:
+      // const college = row["College"];
+
+      const sql = `INSERT OR IGNORE INTO courses (course_code, title, description, credits)
+                   VALUES (?, ?, ?, ?)`;
+
+      db.run(sql, [courseCode, title, description, credits], function (err) {
+        if (err) {
+          console.error(`Error inserting course ${courseCode}:`, err);
+        } else {
+          console.log(`Inserted course ${courseCode}`);
+        }
+      });
+    })
+    .on("end", () => {
+      console.log("CSV file successfully processed.");
+    })
+    .on("error", (error) => {
+      console.error("Error reading CSV file:", error);
+    });
+}
 
 // ================================================
 // Start the Server
@@ -471,4 +924,6 @@ app.listen(PORT, () => {
     `Server is running on port ${PORT} in ${config.environment} mode.`
   );
   console.log(`API endpoints are prefixed with "${API_PREFIX}"`);
+  // import courses
+  // importCoursesFromCSV("./courses.csv");
 });

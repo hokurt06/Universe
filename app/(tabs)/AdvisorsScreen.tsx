@@ -1,60 +1,100 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from "react-native";
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Modal,
+} from "react-native";
 import { useNavigation } from "@react-navigation/native";
-
-// We can use a simple date picker here
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import moment from "moment";
-
-// Advisor data
-const AdvisorDetails = [
-  { name: "Academic Advisor", email: "academic@university.com", phone: "123-456-7890", office: "Building A, Room 101", hours: "Mon-Fri: 10 AM - 2 PM" },
-  { name: "Career Advisor", email: "career@university.com", phone: "123-555-7890", office: "Building B, Room 202", hours: "Mon, Wed, Fri: 1 PM - 4 PM" },
-  { name: "Financial Aid Advisor", email: "financial@university.com", phone: "123-777-7890", office: "Building C, Room 303", hours: "Tue, Thu: 9 AM - 12 PM" },
-  { name: "International Student Advisor", email: "international@university.com", phone: "123-888-7890", office: "Building D, Room 404", hours: "Mon-Fri: 11 AM - 3 PM" }
-];
 
 const AdvisorsScreen: React.FC = () => {
   const [isDatePickerVisible, setDatePickerVisible] = useState<boolean>(false);
   const [selectedDate, setSelectedDate] = useState<string>("");
-  const [selectedAdvisor, setSelectedAdvisor] = useState<string>("");
+  const [selectedAdvisor, setSelectedAdvisor] = useState<any>(null);
+  const [advisors, setAdvisors] = useState<any[]>([]);
   const navigation = useNavigation();
 
-  // Handle date selection
+  // Fetch user's advisors from the API
+  useEffect(() => {
+    const fetchAdvisors = async () => {
+      try {
+        const token = await AsyncStorage.getItem("authToken");
+        if (token) {
+          const response = await fetch(
+            "http://localhost:3000/api/v1/advisors",
+            {
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          const data = await response.json();
+          if (data.advisors && Array.isArray(data.advisors)) {
+            setAdvisors(data.advisors);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching advisors:", error);
+      }
+    };
+
+    fetchAdvisors();
+  }, []);
+
+  // Handle date selection from the picker
   const handleDateConfirm = (date: Date) => {
     setSelectedDate(moment(date).format("MMMM Do YYYY, h:mm A"));
     setDatePickerVisible(false);
   };
 
-  // Handle button press to open date picker
-  const handleSchedulePress = (advisorName: string) => {
-    setSelectedAdvisor(advisorName);
+  // Open date picker for the selected advisor
+  const handleSchedulePress = (advisor: any) => {
+    setSelectedAdvisor(advisor);
     setDatePickerVisible(true);
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Advisors</Text>
-      
+
       {/* Advisor List */}
       <ScrollView style={styles.advisorList}>
-        {AdvisorDetails.map((advisor, index) => (
-          <View key={index} style={styles.advisorCard}>
-            <Text style={styles.advisorName}>{advisor.name}</Text>
-            <Text style={styles.advisorDetail}>Email: {advisor.email}</Text>
-            <Text style={styles.advisorDetail}>Phone: {advisor.phone}</Text>
-            <Text style={styles.advisorDetail}>Office: {advisor.office}</Text>
-            <Text style={styles.advisorDetail}>Office Hours: {advisor.hours}</Text>
+        {advisors.length > 0 ? (
+          advisors.map((advisor, index) => (
+            <View key={index} style={styles.advisorCard}>
+              {/* Display the advisor title */}
+              <Text style={styles.advisorTitle}>{advisor.title}</Text>
+              <Text style={styles.advisorName}>{advisor.name}</Text>
+              <Text style={styles.advisorDetail}>
+                Phone: {advisor.phone_number}
+              </Text>
+              <Text style={styles.advisorDetail}>
+                Office: {advisor.office_address}
+              </Text>
+              <Text style={styles.advisorDetail}>
+                Office Hours: {advisor.office_hours}
+              </Text>
 
-            {/* Button to Schedule Appointment */}
-            <TouchableOpacity 
-              style={styles.scheduleButton} 
-              onPress={() => handleSchedulePress(advisor.name)}
-            >
-              <Text style={styles.scheduleButtonText}>Schedule Appointment</Text>
-            </TouchableOpacity>
-          </View>
-        ))}
+              {/* Button to Schedule Appointment */}
+              <TouchableOpacity
+                style={styles.scheduleButton}
+                onPress={() => handleSchedulePress(advisor)}
+              >
+                <Text style={styles.scheduleButtonText}>
+                  Schedule Appointment
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.noAdvisorsText}>No advisors found.</Text>
+        )}
       </ScrollView>
 
       {/* Date Picker Modal */}
@@ -67,18 +107,22 @@ const AdvisorsScreen: React.FC = () => {
 
       {/* Appointment Confirmation Modal */}
       {selectedDate && selectedAdvisor && (
-        <Modal transparent={true} animationType="slide" visible={selectedDate !== ""}>
+        <Modal
+          transparent={true}
+          animationType="slide"
+          visible={selectedDate !== ""}
+        >
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <Text style={styles.modalHeader}>
-                Appointment Scheduled with {selectedAdvisor}
+                Appointment Scheduled with {selectedAdvisor.name}
               </Text>
               <Text style={styles.modalBody}>
                 Your appointment is scheduled for: {selectedDate}
               </Text>
-              <TouchableOpacity 
-                style={styles.closeButton} 
-                onPress={() => setSelectedDate("")} 
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setSelectedDate("")}
               >
                 <Text style={styles.closeButtonText}>Close</Text>
               </TouchableOpacity>
@@ -116,6 +160,12 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 3,
   },
+  advisorTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#007AFF",
+    marginBottom: 3,
+  },
   advisorName: {
     fontSize: 22,
     fontWeight: "600",
@@ -138,6 +188,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     color: "#FFFFFF",
+  },
+  noAdvisorsText: {
+    fontSize: 18,
+    color: "#666",
+    textAlign: "center",
+    marginTop: 20,
   },
   modalOverlay: {
     flex: 1,
