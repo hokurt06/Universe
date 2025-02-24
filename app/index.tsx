@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -16,8 +16,36 @@ const LoginScreen: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const router = useRouter();
 
+  // Check for an existing token on mount
+  useEffect(() => {
+    const checkToken = async () => {
+      const token = await AsyncStorage.getItem("authToken");
+      if (token) {
+        try {
+          const response = await fetch("http://localhost:3000/api/v1/profile", {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          if (response.ok) {
+            // Token is valid, navigate to home
+            router.replace("/(tabs)/home");
+          } else {
+            // Token is invalid, remove it
+            await AsyncStorage.removeItem("authToken");
+          }
+        } catch (error) {
+          console.error("Error checking token:", error);
+        }
+      }
+    };
+
+    checkToken();
+  }, [router]);
+
   const handleSignIn = async () => {
-    // Check if both email and password are provided
     if (!email || !password) {
       Alert.alert("Error", "Please enter both email and password.");
       return;
@@ -34,10 +62,9 @@ const LoginScreen: React.FC = () => {
 
       const data = await response.json();
 
-      // If response is ok, save the token and navigate to the home tab
       if (response.ok) {
         await AsyncStorage.setItem("authToken", data.token);
-        router.replace("/(tabs)/home"); // Redirect to home tab after login
+        router.replace("/(tabs)/home");
       } else {
         Alert.alert("Login Failed", data.message || "Invalid credentials");
       }
