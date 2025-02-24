@@ -24,6 +24,8 @@ export default function TabLayout() {
       <Tabs.Screen name="academic" options={{ title: "Academic" }} />
       {/* Schedule Tab */}
       <Tabs.Screen name="schedule" options={{ title: "Schedule" }} />
+      {/* Advisor Tab */}
+      <Tabs.Screen name="advisor" options={{ title: "Advisor" }} />
     </Tabs>
   );
 }
