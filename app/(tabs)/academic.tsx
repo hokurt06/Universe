@@ -1,22 +1,12 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from "react-native";
+import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView } from "react-native";
 
 const AcademicScreen: React.FC = () => {
-  const [selectedTerm, setSelectedTerm] = useState<string>("Fall 2024");
-  const [showTermModal, setShowTermModal] = useState<boolean>(false);
   const [selectedAdvisor, setSelectedAdvisor] = useState<string | null>(null);
   const [showAdvisorModal, setShowAdvisorModal] = useState<boolean>(false);
   const [showAppointmentModal, setShowAppointmentModal] = useState<boolean>(false);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null);
 
-  // Term options
-  const termOptions = [
-    { key: "Fall 2024", label: "Fall 2024" },
-    { key: "Spring 2025", label: "Spring 2025" },
-    { key: "Summer 2025", label: "Summer 2025" },
-  ];
-
-  // Advisor options
   const advisorOptions = [
     { key: "Academic", name: "Academic Advisor", email: "academic@university.com", phone: "123-456-7890", office: "Building A, Room 101", dropInHours: "Mon-Fri: 10 AM - 2 PM" },
     { key: "Career", name: "Career Advisor", email: "career@university.com", phone: "123-555-7890", office: "Building B, Room 202", dropInHours: "Mon, Wed, Fri: 1 PM - 4 PM" },
@@ -24,27 +14,22 @@ const AcademicScreen: React.FC = () => {
     { key: "International", name: "International Student Advisor", email: "international@university.com", phone: "123-888-7890", office: "Building D, Room 404", dropInHours: "Mon-Fri: 11 AM - 3 PM" }
   ];
 
-  // Appointment time slots
   const timeSlots = ["10:00 AM", "11:00 AM", "1:00 PM", "2:00 PM", "3:00 PM"];
 
-  // Open Advisor Details Modal
   const openAdvisorModal = (advisorKey: string) => {
     setSelectedAdvisor(advisorKey);
     setShowAdvisorModal(true);
   };
 
-  // Close Advisor Details Modal
   const closeAdvisorModal = () => {
     setShowAdvisorModal(false);
     setSelectedAdvisor(null);
   };
 
-  // Open Appointment Modal
   const openAppointmentModal = () => {
     setShowAppointmentModal(true);
   };
 
-  // Close Appointment Modal
   const closeAppointmentModal = () => {
     setShowAppointmentModal(false);
     setSelectedTimeSlot(null);
@@ -65,35 +50,6 @@ const AcademicScreen: React.FC = () => {
           Total Credits: <Text style={styles.boldText}>20</Text>
         </Text>
       </View>
-
-      {/* Term Selection */}
-      <TouchableOpacity style={styles.dropdownButton} onPress={() => setShowTermModal(true)}>
-        <Text style={styles.dropdownText}>{selectedTerm} ▼</Text>
-      </TouchableOpacity>
-
-      {/* Modal for selecting term */}
-      <Modal transparent animationType="fade" visible={showTermModal}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalHeader}>Select Term</Text>
-            {termOptions.map((option) => (
-              <TouchableOpacity
-                key={option.key}
-                style={styles.termOption}
-                onPress={() => {
-                  setSelectedTerm(option.label);
-                  setShowTermModal(false);
-                }}
-              >
-                <Text style={styles.termOptionText}>{option.label}</Text>
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity style={styles.closeButton} onPress={() => setShowTermModal(false)}>
-              <Text style={styles.closeButtonText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
 
       {/* Advisors Section */}
       <Text style={styles.subHeader}>Advisors</Text>
@@ -148,6 +104,27 @@ const AcademicScreen: React.FC = () => {
   );
 };
 
-// Styles remain the same from previous code
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 16 },
+  header: { fontSize: 24, fontWeight: "bold", marginBottom: 16 },
+  subHeader: { fontSize: 20, fontWeight: "bold", marginBottom: 8 },
+  classesContainer: { marginBottom: 20 },
+  card: { padding: 10, marginVertical: 5, backgroundColor: "#e0e0e0", borderRadius: 8 },
+  classCard: { padding: 10, marginVertical: 5, backgroundColor: "#f0f0f0", borderRadius: 8 },
+  classText: { fontSize: 18 },
+  gpa: { fontSize: 18, fontWeight: "bold" },
+  credits: { fontSize: 18, marginTop: 8 },
+  modalOverlay: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0, 0, 0, 0.5)" },
+  modalContent: { backgroundColor: "white", padding: 20, borderRadius: 8, width: 300 },
+  modalHeader: { fontSize: 20, fontWeight: "bold", marginBottom: 10 },
+  modalText: { fontSize: 16, marginBottom: 8 },
+  scheduleButton: { backgroundColor: "#007bff", padding: 10, borderRadius: 8, marginTop: 10 },
+  scheduleButtonText: { color: "white", textAlign: "center" },
+  closeButton: { backgroundColor: "#ccc", padding: 10, borderRadius: 8, marginTop: 10 },
+  closeButtonText: { color: "white", textAlign: "center" },
+  termOption: { padding: 10 },
+  termOptionText: { fontSize: 16 },
+  boldText: { fontWeight: "bold" },
+});
 
 export default AcademicScreen;
