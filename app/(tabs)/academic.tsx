@@ -11,8 +11,7 @@ import { useNavigation, NavigationProp } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type RootStackParamList = {
-  Advisors: undefined;
-  // Add other routes here if necessary
+  advisors: undefined; // Match the file name "advisors.tsx"
 };
 
 const AcademicScreen: React.FC = () => {
@@ -181,7 +180,7 @@ const AcademicScreen: React.FC = () => {
       {/* Button to Navigate to Advisors Screen */}
       <TouchableOpacity
         style={styles.advisorsButton}
-        onPress={() => navigation.navigate("Advisors")}
+        onPress={() => navigation.navigate("advisors")} // Changed to "advisors"
       >
         <Text style={styles.advisorsButtonText}>View Advisors</Text>
       </TouchableOpacity>
@@ -189,6 +188,7 @@ const AcademicScreen: React.FC = () => {
   );
 };
 
+// Styles remain unchanged
 const styles = StyleSheet.create({
   container: {
     flex: 1,
