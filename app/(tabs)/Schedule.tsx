@@ -22,12 +22,15 @@ const CourseSchedule: React.FC = () => {
       try {
         const token = await AsyncStorage.getItem("authToken");
         if (token) {
-          const response = await fetch("http://localhost:3000/api/v1/terms", {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          });
+          const response = await fetch(
+            "https://universe.terabytecomputing.com:3000/api/v1/terms",
+            {
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
           const data = await response.json();
           if (data.terms && Array.isArray(data.terms)) {
             const termOptions = data.terms.map((term: string) => ({
@@ -55,7 +58,7 @@ const CourseSchedule: React.FC = () => {
         const token = await AsyncStorage.getItem("authToken");
         if (token) {
           const response = await fetch(
-            "http://localhost:3000/api/v1/enrollments",
+            "https://universe.terabytecomputing.com:3000/api/v1/enrollments",
             {
               headers: {
                 "Content-Type": "application/json",

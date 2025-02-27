@@ -22,13 +22,16 @@ const LoginScreen: React.FC = () => {
       const token = await AsyncStorage.getItem("authToken");
       if (token) {
         try {
-          const response = await fetch("http://localhost:3000/api/v1/profile", {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          });
+          const response = await fetch(
+            "https://universe.terabytecomputing.com:3000/api/v1/profile",
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
           if (response.ok) {
             // Token is valid, navigate to home
             router.replace("/(tabs)/home");
@@ -54,11 +57,14 @@ const LoginScreen: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:3000/api/v1/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      const response = await fetch(
+        "https://universe.terabytecomputing.com:3000/api/v1/login",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        }
+      );
 
       const data = await response.json();
 

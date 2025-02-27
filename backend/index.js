@@ -7,7 +7,7 @@ const bcrypt = require("bcrypt");
 const nodemailer = require("nodemailer");
 const fs = require("fs");
 const csvParser = require("csv-parser");
-
+const https = require("https"); // <-- Added https module
 const app = express();
 const cors = require("cors");
 
@@ -919,11 +919,39 @@ function importCoursesFromCSV(filePath) {
 }
 
 // ================================================
-// Start the Server
+// Start the HTTPS Server using SSL Keys
 // ================================================
-app.listen(PORT, () => {
+
+const sslNotFoundError =
+  "Error reading SSL certificate.\n\nHint: you no longer need to run the backend server on your local machine!\nJust run the app.";
+const sslOptions = {
+  key: readFileSafe(
+    "/etc/letsencrypt/live/universe.terabytecomputing.com/privkey.pem",
+    true,
+    sslNotFoundError
+  ),
+  cert: readFileSafe(
+    "/etc/letsencrypt/live/universe.terabytecomputing.com/fullchain.pem",
+    true,
+    sslNotFoundError
+  ),
+};
+
+function readFileSafe(path, breakOnError, errorMessage) {
+  try {
+    return fs.readFileSync(path);
+  } catch (error) {
+    console.error(errorMessage);
+    if (breakOnError) {
+      process.exit(1);
+    }
+    return null;
+  }
+}
+
+https.createServer(sslOptions, app).listen(PORT, () => {
   console.log(
-    `Server is running on port ${PORT} in ${config.environment} mode.`
+    `Server is running on port ${PORT} in ${config.environment} mode (HTTPS).`
   );
   console.log(`API endpoints are prefixed with "${API_PREFIX}"`);
   // import courses

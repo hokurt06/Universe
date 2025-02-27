@@ -26,7 +26,7 @@ const AdvisorsScreen: React.FC = () => {
         const token = await AsyncStorage.getItem("authToken");
         if (token) {
           const response = await fetch(
-            "http://localhost:3000/api/v1/advisors",
+            "https://universe.terabytecomputing.com:3000/api/v1/advisors",
             {
               headers: {
                 "Content-Type": "application/json",
