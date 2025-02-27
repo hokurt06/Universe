@@ -181,3 +181,4 @@ yarn-error.*
 *.tsbuildinfo
 
 # @end expo-cli
+.expo/types/router.d.ts
