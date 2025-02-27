@@ -252,7 +252,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: "#222",
   },
-
   grade: {
     fontSize: 18,
     fontWeight: "600",
