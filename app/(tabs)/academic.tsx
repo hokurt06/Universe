@@ -7,12 +7,8 @@ import {
   TouchableOpacity,
   Modal,
 } from "react-native";
-import { useNavigation, NavigationProp } from "@react-navigation/native";
+import { useRouter } from "expo-router"; // Replace useNavigation
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-type RootStackParamList = {
-  advisors: undefined; // Match the file name "advisors.tsx"
-};
 
 const AcademicScreen: React.FC = () => {
   const [selectedTerm, setSelectedTerm] = useState<string>("");
@@ -20,7 +16,7 @@ const AcademicScreen: React.FC = () => {
   const [showTermModal, setShowTermModal] = useState<boolean>(false);
   const [courses, setCourses] = useState<any[]>([]);
 
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const router = useRouter(); // Use Expo Router's router
 
   // Fetch terms from the API
   useEffect(() => {
@@ -165,7 +161,7 @@ const AcademicScreen: React.FC = () => {
       {/* Button to Navigate to Advisors Screen */}
       <TouchableOpacity
         style={styles.advisorsButton}
-        onPress={() => navigation.navigate("advisors")} // Changed to "advisors"
+        onPress={() => router.push("/advisors")} // Changed to router.push
       >
         <Text style={styles.advisorsButtonText}>View Advisors</Text>
       </TouchableOpacity>
