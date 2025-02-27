@@ -9,6 +9,7 @@ const fs = require("fs");
 const csvParser = require("csv-parser");
 
 const app = express();
+const cors = require("cors");
 
 // ================================================
 // Environment Configuration
@@ -34,6 +35,7 @@ const API_PREFIX = config.apiPrefix;
 const SALT_ROUNDS = 10;
 
 app.use(express.json());
+app.use(cors());
 
 // ================================================
 // Helper Middleware: Field Validation
