@@ -149,21 +149,6 @@ const AcademicScreen: React.FC = () => {
                 <Text style={styles.classText}>
                   {course.title} ({course.course_code})
                 </Text>
-                <Text style={styles.classSubText}></Text>
-                <Text style={styles.sectionText}>
-                  Section: {course.section_identifier}{" "}
-                  {course.class_type ? `(${course.class_type})` : ""}
-                </Text>
-                <Text style={styles.sectionText}>
-                  Meeting Time: {course.meeting_time}
-                </Text>
-                <Text style={styles.sectionText}>
-                  Location: {course.location_address}
-                </Text>
-                <Text style={styles.sectionText}>
-                  Professor:{" "}
-                  {course.section_professor || course.offering_professor}
-                </Text>
               </View>
               <Text style={styles.grade}>
                 {course.grade ? course.grade : "N/A"}
@@ -267,15 +252,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: "#222",
   },
-  classSubText: {
-    fontSize: 14,
-    color: "#666",
-  },
-  sectionText: {
-    fontSize: 14,
-    color: "#444",
-    marginTop: 2,
-  },
+
   grade: {
     fontSize: 18,
     fontWeight: "600",
