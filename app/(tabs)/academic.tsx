@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Modal,
 } from "react-native";
-import { useRouter } from "expo-router"; // Replace useNavigation
+import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const AcademicScreen: React.FC = () => {
@@ -15,8 +15,9 @@ const AcademicScreen: React.FC = () => {
   const [terms, setTerms] = useState<{ key: string; label: string }[]>([]);
   const [showTermModal, setShowTermModal] = useState<boolean>(false);
   const [courses, setCourses] = useState<any[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState<any | null>(null); // New state for selected course
 
-  const router = useRouter(); // Use Expo Router's router
+  const router = useRouter();
 
   // Fetch terms from the API
   useEffect(() => {
@@ -81,11 +82,49 @@ const AcademicScreen: React.FC = () => {
     fetchCourses();
   }, []);
 
-  // Filter courses based on the selected term (quarter)
+  // Filter courses based on the selected term
   const coursesForTerm = courses.filter(
     (course) => course.quarter === selectedTerm
   );
 
+  // Open course details
+  const openCourse = (course: any) => {
+    setSelectedCourse(course);
+  };
+
+  // Close course details
+  const closeCourse = () => {
+    setSelectedCourse(null);
+  };
+
+  // Fullscreen Course Detail View
+  if (selectedCourse) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.header}>Course Details</Text>
+        <ScrollView style={styles.courseDetailContainer}>
+          <Text style={styles.detailText}>
+            <Text style={styles.boldText}>Course: </Text>
+            {selectedCourse.title} ({selectedCourse.course_code})
+          </Text>
+          <Text style={styles.detailText}>
+            <Text style={styles.boldText}>Term: </Text>
+            {selectedCourse.quarter}
+          </Text>
+          <Text style={styles.detailText}>
+            <Text style={styles.boldText}>Grade: </Text>
+            {selectedCourse.grade ? selectedCourse.grade : "N/A"}
+          </Text>
+          {/* Add more course details here if available from API */}
+          <TouchableOpacity style={styles.backButton} onPress={closeCourse}>
+            <Text style={styles.backButtonText}>Back to Academics</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // Initial Academic View
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Academics</Text>
@@ -143,7 +182,11 @@ const AcademicScreen: React.FC = () => {
       >
         {coursesForTerm.length > 0 ? (
           coursesForTerm.map((course) => (
-            <View key={course.enrollment_id} style={styles.classCard}>
+            <TouchableOpacity
+              key={course.enrollment_id}
+              style={styles.classCard}
+              onPress={() => openCourse(course)} // Make course clickable
+            >
               <View>
                 <Text style={styles.classText}>
                   {course.title} ({course.course_code})
@@ -152,7 +195,7 @@ const AcademicScreen: React.FC = () => {
               <Text style={styles.grade}>
                 {course.grade ? course.grade : "N/A"}
               </Text>
-            </View>
+            </TouchableOpacity>
           ))
         ) : (
           <Text style={styles.noCoursesText}>
@@ -164,7 +207,7 @@ const AcademicScreen: React.FC = () => {
       {/* Button to Navigate to Advisors Screen */}
       <TouchableOpacity
         style={styles.advisorsButton}
-        onPress={() => router.push("/advisors")} // Changed to router.push
+        onPress={() => router.push("/advisors")}
       >
         <Text style={styles.advisorsButtonText}>View Advisors</Text>
       </TouchableOpacity>
@@ -172,7 +215,7 @@ const AcademicScreen: React.FC = () => {
   );
 };
 
-// Styles remain unchanged
+// Updated Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -319,6 +362,35 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   advisorsButtonText: {
+    fontSize: 18,
+    fontWeight: "500",
+    color: "#FFFFFF",
+  },
+  // New styles for course detail view
+  courseDetailContainer: {
+    width: "90%",
+    backgroundColor: "#FFFFFF",
+    padding: 20,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  detailText: {
+    fontSize: 18,
+    color: "#555",
+    marginBottom: 15,
+  },
+  backButton: {
+    backgroundColor: "#007AFF",
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 12,
+    alignSelf: "center",
+    marginTop: 20,
+  },
+  backButtonText: {
     fontSize: 18,
     fontWeight: "500",
     color: "#FFFFFF",
