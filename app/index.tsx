@@ -85,8 +85,8 @@ const LoginScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Logo component */}
-      <Logo /> {/* Use the Logo component here */}
+      {}
+      <Logo /> {}
 
       <TextInput
         style={styles.input}
