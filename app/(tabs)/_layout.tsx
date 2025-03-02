@@ -1,4 +1,4 @@
-import { Asset } from "expo-asset";
+// byteme/app/tabs/tablayout.tsx
 import { Tabs } from "expo-router";
 import React from "react";
 import { Platform, Image } from "react-native";
@@ -7,12 +7,6 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
-
-  // Preload images (optional but recommended)
-  const homeIcon = Asset.fromModule(require("../../assets/images/favicon.png")).uri;
-  const academicIcon = Asset.fromModule(require("../../assets/images/applogo.png")).uri;
-  const scheduleIcon = Asset.fromModule(require("../../assets/images/applogo.png")).uri;
-  const inboxIcon = Asset.fromModule(require("../../assets/images/applogo.png")).uri;
 
   return (
     <Tabs
@@ -32,7 +26,7 @@ export default function TabLayout() {
           title: "Home",
           tabBarIcon: () => (
             <Image
-              source={{ uri: homeIcon }}
+              source={require("../../assets/images/applogo.png")}
               style={{ width: 25, height: 25 }}
             />
           ),
@@ -46,7 +40,7 @@ export default function TabLayout() {
           title: "Academic",
           tabBarIcon: () => (
             <Image
-              source={{ uri: academicIcon }}
+              source={require("../../assets/images/applogo.png")}
               style={{ width: 25, height: 25 }}
             />
           ),
@@ -60,7 +54,7 @@ export default function TabLayout() {
           title: "Schedule",
           tabBarIcon: () => (
             <Image
-              source={{ uri: scheduleIcon }}
+              source={require("../../assets/images/applogo.png")}
               style={{ width: 25, height: 25 }}
             />
           ),
@@ -74,7 +68,7 @@ export default function TabLayout() {
           title: "Inbox",
           tabBarIcon: () => (
             <Image
-              source={{ uri: inboxIcon }}
+              source={require("../../assets/images/applogo.png")}
               style={{ width: 25, height: 25 }}
             />
           ),
