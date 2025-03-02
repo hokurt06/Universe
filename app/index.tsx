@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Logo from "../components/Logo"; 
 
 const LoginScreen: React.FC = () => {
   const [email, setEmail] = useState<string>("");
@@ -84,6 +85,9 @@ const LoginScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      {/* Logo component */}
+      <Logo /> {/* Use the Logo component here */}
+
       <TextInput
         style={styles.input}
         placeholder="Email"
