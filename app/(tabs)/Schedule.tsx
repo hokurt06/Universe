@@ -10,7 +10,9 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const CourseSchedule: React.FC = () => {
-  const [viewMode, setViewMode] = useState<"initial" | "schedule" | "exams">("initial"); // Start with initial view
+  const [viewMode, setViewMode] = useState<"initial" | "schedule" | "exams">(
+    "initial"
+  ); // Start with initial view
   const [selectedClass, setSelectedClass] = useState<number | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [selectedTerm, setSelectedTerm] = useState<string>("");
@@ -127,7 +129,9 @@ const CourseSchedule: React.FC = () => {
     return (
       <View style={styles.container}>
         <Text style={styles.header}>Course Schedule</Text>
-        <Text style={styles.subHeader}>Term: {selectedTerm || "Loading..."}</Text>
+        <Text style={styles.subHeader}>
+          Term: {selectedTerm || "Loading..."}
+        </Text>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => setViewMode("initial")}
@@ -203,7 +207,10 @@ const CourseSchedule: React.FC = () => {
                       selectedCourse.offering_professor}
                   </Text>
                 </Text>
-                <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={closeModal}
+                >
                   <Text style={styles.closeButtonText}>Close</Text>
                 </TouchableOpacity>
               </View>
@@ -241,7 +248,9 @@ const CourseSchedule: React.FC = () => {
     return (
       <View style={styles.container}>
         <Text style={styles.header}>Exam Schedule</Text>
-        <Text style={styles.subHeader}>Term: {selectedTerm || "Loading..."}</Text>
+        <Text style={styles.subHeader}>
+          Term: {selectedTerm || "Loading..."}
+        </Text>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => setViewMode("initial")}

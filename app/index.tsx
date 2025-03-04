@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import Logo from "../components/Logo"; 
+import Logo from "../components/Logo";
 
 const LoginScreen: React.FC = () => {
   const [email, setEmail] = useState<string>("");
@@ -87,7 +87,6 @@ const LoginScreen: React.FC = () => {
     <View style={styles.container}>
       {}
       <Logo /> {}
-
       <TextInput
         style={styles.input}
         placeholder="Email"
@@ -105,7 +104,6 @@ const LoginScreen: React.FC = () => {
         value={password}
         onChangeText={setPassword}
       />
-
       <TouchableOpacity
         style={styles.signInButton}
         onPress={handleSignIn}
@@ -115,11 +113,9 @@ const LoginScreen: React.FC = () => {
           {loading ? "Signing In..." : "Sign In"}
         </Text>
       </TouchableOpacity>
-
       <TouchableOpacity>
         <Text style={styles.linkText}>Forgot Password?</Text>
       </TouchableOpacity>
-
       <View style={styles.bottomContainer}>
         <TouchableOpacity>
           <Text style={styles.signUpText}>
