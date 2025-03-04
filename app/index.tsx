@@ -85,8 +85,8 @@ const LoginScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {}
-      <Logo /> {}
+      
+      <Logo /> 
       <TextInput
         style={styles.input}
         placeholder="Email"
