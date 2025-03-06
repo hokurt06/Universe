@@ -113,7 +113,7 @@ const AcademicScreen: React.FC = () => {
           </Text>
           <Text style={styles.detailText}>
             <Text style={styles.boldText}>Grade: </Text>
-            {selectedCourse.grade ? selectedCourse.grade : ""}
+            {selectedCourse.grade ? selectedCourse.grade : "N/A"}
           </Text>
           {/* Add more course details here if available from API */}
           <TouchableOpacity style={styles.backButton} onPress={closeCourse}>
@@ -189,12 +189,11 @@ const AcademicScreen: React.FC = () => {
             >
               <View>
                 <Text style={styles.classText}>
-                  ({course.course_code}) -{" "}
-                  {course.title.replace("Introduction", "Intro")}
+                  {course.title} ({course.course_code})
                 </Text>
               </View>
               <Text style={styles.grade}>
-                {course.grade ? course.grade : "94.66%"}
+                {course.grade ? course.grade : "N/A"}
               </Text>
             </TouchableOpacity>
           ))
