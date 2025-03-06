@@ -10,12 +10,13 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const CourseSchedule: React.FC = () => {
-  const [viewMode, setViewMode] = useState<"schedule" | "exams">("schedule"); // Default to schedule
+  const [viewMode, setViewMode] = useState<"initial" | "schedule" | "exams">("initial");
   const [selectedClass, setSelectedClass] = useState<number | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [selectedTerm, setSelectedTerm] = useState<string>("");
   const [terms, setTerms] = useState<{ key: string; label: string }[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
+  const [showExams, setShowExams] = useState(false); // Added state for toggling exams
 
   // Fetch terms from the API
   useEffect(() => {
@@ -123,125 +124,147 @@ const CourseSchedule: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>
-        {viewMode === "schedule" ? "Course Schedule" : "Exam Schedule"}
-      </Text>
-      <Text style={styles.subHeader}>
-        Term: {selectedTerm || "Loading..."}
-      </Text>
-
-      {/* Schedule View */}
-      {viewMode === "schedule" && (
-        <View style={styles.scheduleWrapper}>
-          <ScrollView
-            style={styles.classesContainer}
-            showsVerticalScrollIndicator={false}
-          >
-            {coursesForTerm.length > 0 ? (
-              coursesForTerm.map((course) => (
-                <TouchableOpacity
-                  key={course.enrollment_id}
-                  style={styles.classCard}
-                  onPress={() => openModal(course.enrollment_id)}
-                >
-                  <Text style={styles.classText}>
-                    {course.title} ({course.course_code})
-                  </Text>
-                  <Text style={styles.timeText}>
-                    Section: {course.section_identifier}
-                  </Text>
-                  <Text style={styles.timeText}>Time: {course.meeting_time}</Text>
-                  <Text style={styles.locationText}>
-                    Location: {course.location_address}
-                  </Text>
-                </TouchableOpacity>
-              ))
-            ) : (
-              <Text style={styles.noCoursesText}>
-                No courses found for {selectedTerm}
-              </Text>
-            )}
-          </ScrollView>
-          {/* View Exams Button moved to bottom */}
+      {viewMode === "initial" ? (
+        <View style={styles.initialContainer}>
+          <Text style={styles.header}>Course Schedule</Text>
           <TouchableOpacity
-            style={styles.examsButton}
-            onPress={() => setViewMode("exams")}
-          >
-            <Text style={styles.examsButtonText}>View Exams</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Exams View */}
-      {viewMode === "exams" && (
-        <>
-          <TouchableOpacity
-            style={styles.backButton}
+            style={styles.viewButton}
             onPress={() => setViewMode("schedule")}
           >
-            <Text style={styles.backButtonText}>Back to Schedule</Text>
+            <Text style={styles.viewButtonText}>View Schedule</Text>
           </TouchableOpacity>
-          <ScrollView
-            style={styles.examsContainer}
-            showsVerticalScrollIndicator={false}
+          <TouchableOpacity
+            style={styles.viewButton}
+            onPress={() => setViewMode("exams")}
           >
-            {sampleExams.map((exam) => (
-              <View key={exam.id} style={styles.examCard}>
-                <Text style={styles.examCourseText}>{exam.subject}</Text>
-                <Text style={styles.examText}>Midterm: {exam.midterm}</Text>
-                <Text style={styles.examText}>Final: {exam.final}</Text>
-              </View>
-            ))}
-          </ScrollView>
-        </>
-      )}
+            <Text style={styles.viewButtonText}>View Exams</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <>
+          <Text style={styles.header}>
+            {viewMode === "schedule" ? "Course Schedule" : "Exam Schedule"}
+          </Text>
+          <Text style={styles.subHeader}>
+            Term: {selectedTerm || "Loading..."}
+          </Text>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => setViewMode("initial")}
+          >
+            <Text style={styles.backButtonText}>Back</Text>
+          </TouchableOpacity>
 
-      {/* Modal for Class Details */}
-      {showModal && selectedCourse && (
-        <Modal transparent animationType="fade" visible={showModal}>
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalHeader}>Class Information</Text>
-              <Text style={styles.modalText}>
-                Course:{" "}
-                <Text style={styles.boldText}>
-                  {selectedCourse.title} ({selectedCourse.course_code})
+          {viewMode === "schedule" && (
+            <>
+              <TouchableOpacity
+                style={styles.examsButton}
+                onPress={() => setShowExams(!showExams)}
+              >
+                <Text style={styles.examsButtonText}>
+                  {showExams ? "Hide Exams" : "Show Exams"}
                 </Text>
-              </Text>
-              <Text style={styles.modalText}>
-                Section:{" "}
-                <Text style={styles.boldText}>
-                  {selectedCourse.section_identifier}{" "}
-                  {selectedCourse.class_type
-                    ? `(${selectedCourse.class_type})`
-                    : ""}
-                </Text>
-              </Text>
-              <Text style={styles.modalText}>
-                Meeting Time:{" "}
-                <Text style={styles.boldText}>
-                  {selectedCourse.meeting_time}
-                </Text>
-              </Text>
-              <Text style={styles.modalText}>
-                Location:{" "}
-                <Text style={styles.boldText}>
-                  {selectedCourse.location_address}
-                </Text>
-              </Text>
-              <Text style={styles.modalText}>
-                Professor:{" "}
-                <Text style={styles.boldText}>
-                  {selectedCourse.section_professor ||
-                    selectedCourse.offering_professor}
-                </Text>
-              </Text>
-              <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-                <Text style={styles.closeButtonText}>Close</Text>
               </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
+              <ScrollView
+                style={styles.classesContainer}
+                showsVerticalScrollIndicator={false}
+              >
+                {coursesForTerm.length > 0 ? (
+                  coursesForTerm.map((course) => (
+                    <TouchableOpacity
+                      key={course.enrollment_id}
+                      style={styles.classCard}
+                      onPress={() => openModal(course.enrollment_id)}
+                    >
+                      <Text style={styles.classText}>
+                        {course.title} ({course.course_code})
+                      </Text>
+                      <Text style={styles.timeText}>
+                        Section: {course.section_identifier}
+                      </Text>
+                      <Text style={styles.timeText}>
+                        Time: {course.meeting_time}
+                      </Text>
+                      <Text style={styles.locationText}>
+                        Location: {course.location_address}
+                      </Text>
+                    </TouchableOpacity>
+                  ))
+                ) : (
+                  <Text style={styles.noCoursesText}>
+                    No courses found for {selectedTerm}
+                  </Text>
+                )}
+              </ScrollView>
+            </>
+          )}
+
+          {(viewMode === "exams" || showExams) && (
+            <ScrollView
+              style={styles.examsContainer}
+              showsVerticalScrollIndicator={false}
+            >
+              <Text style={styles.examsHeader}>Exam Schedule</Text>
+              {sampleExams.map((exam) => (
+                <View key={exam.id} style={styles.examCard}>
+                  <Text style={styles.examCourseText}>{exam.subject}</Text>
+                  <Text style={styles.examText}>Midterm: {exam.midterm}</Text>
+                  <Text style={styles.examText}>Final: {exam.final}</Text>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+
+          {showModal && selectedCourse && (
+            <Modal transparent animationType="fade" visible={showModal}>
+              <View style={styles.modalOverlay}>
+                <View style={styles.modalContent}>
+                  <Text style={styles.modalHeader}>Class Information</Text>
+                  <Text style={styles.modalText}>
+                    Course:{" "}
+                    <Text style={styles.boldText}>
+                      {selectedCourse.title} ({selectedCourse.course_code})
+                    </Text>
+                  </Text>
+                  <Text style={styles.modalText}>
+                    Section:{" "}
+                    <Text style={styles.boldText}>
+                      {selectedCourse.section_identifier}{" "}
+                      {selectedCourse.class_type
+                        ? `(${selectedCourse.class_type})`
+                        : ""}
+                    </Text>
+                  </Text>
+                  <Text style={styles.modalText}>
+                    Meeting Time:{" "}
+                    <Text style={styles.boldText}>
+                      {selectedCourse.meeting_time}
+                    </Text>
+                  </Text>
+                  <Text style={styles.modalText}>
+                    Location:{" "}
+                    <Text style={styles.boldText}>
+                      {selectedCourse.location_address}
+                    </Text>
+                  </Text>
+                  <Text style={styles.modalText}>
+                    Professor:{" "}
+                    <Text style={styles.boldText}>
+                      {selectedCourse.section_professor ||
+                        selectedCourse.offering_professor}
+                    </Text>
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.closeButton}
+                    onPress={closeModal}
+                  >
+                    <Text style={styles.closeButtonText}>Close</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Modal>
+          )}
+        </>
       )}
     </View>
   );
@@ -253,6 +276,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#F9F9F9",
     paddingTop: 70,
+  },
+  initialContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   header: {
     fontSize: 26,
@@ -266,22 +294,15 @@ const styles = StyleSheet.create({
     color: "#007AFF",
     marginBottom: 15,
   },
-  scheduleWrapper: {
-    flex: 1,
-    width: "90%",
-    justifyContent: "space-between", // Ensures button stays at bottom
-  },
-  examsButton: {
+  viewButton: {
     backgroundColor: "#007AFF",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 30,
     borderRadius: 12,
-    marginTop: 15,
-    marginBottom: 20, // Adds some spacing at the bottom
-    alignSelf: "center", // Centers the button horizontally
+    marginVertical: 10,
   },
-  examsButtonText: {
-    fontSize: 16,
+  viewButtonText: {
+    fontSize: 18,
     fontWeight: "500",
     color: "#FFFFFF",
   },
@@ -297,8 +318,22 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: "#FFFFFF",
   },
+  examsButton: {
+    backgroundColor: "#007AFF",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginBottom: 15,
+  },
+  examsButtonText: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#FFFFFF",
+  },
   classesContainer: {
-    flex: 1, // Takes up available space above the button
+    width: "90%",
+    maxHeight: "40%",
+    marginBottom: 10,
   },
   classCard: {
     backgroundColor: "#FFFFFF",
@@ -376,7 +411,14 @@ const styles = StyleSheet.create({
   },
   examsContainer: {
     width: "90%",
-    flex: 1, // Takes up available space
+    maxHeight: "35%",
+  },
+  examsHeader: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#1C1C1E",
+    marginBottom: 10,
+    textAlign: "center",
   },
   examCard: {
     backgroundColor: "#FFFFFF",
