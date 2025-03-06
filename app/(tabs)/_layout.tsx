@@ -7,11 +7,12 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const activeColor = Colors[colorScheme ?? "light"].tint; // Blue color for active tab
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
+        tabBarActiveTintColor: activeColor,
         headerShown: false,
         tabBarStyle: Platform.select({
           ios: { position: "absolute" },
@@ -24,52 +25,68 @@ export default function TabLayout() {
         name="home"
         options={{
           title: "Home",
-          tabBarIcon: () => (
+          tabBarIcon: ({ focused }) => (
             <Image
               source={require("../../assets/images/home.png")}
-              style={{ width: 27, height: 27 }}
+              style={{
+                width: 27,
+                height: 27,
+                tintColor: focused ? activeColor : "gray",
+              }}
             />
           ),
         }}
       />
-      
+
       {/* Academic Tab */}
       <Tabs.Screen
         name="academic"
         options={{
           title: "Academic",
-          tabBarIcon: () => (
+          tabBarIcon: ({ focused }) => (
             <Image
               source={require("../../assets/images/academic.png")}
-              style={{ width: 30, height: 30 }}
+              style={{
+                width: 30,
+                height: 30,
+                tintColor: focused ? activeColor : "gray",
+              }}
             />
           ),
         }}
       />
-      
+
       {/* Schedule Tab */}
       <Tabs.Screen
         name="schedule"
         options={{
           title: "Schedule",
-          tabBarIcon: () => (
+          tabBarIcon: ({ focused }) => (
             <Image
               source={require("../../assets/images/schedule.png")}
-              style={{ width: 23, height: 23 }}
+              style={{
+                width: 23,
+                height: 23,
+                tintColor: focused ? activeColor : "gray",
+              }}
             />
           ),
         }}
       />
-      
+
       {/* Inbox Tab */}
       <Tabs.Screen
         name="inbox"
         options={{
           title: "Inbox",
-          tabBarIcon: () => (
+          tabBarIcon: ({ focused }) => (
             <Image
               source={require("../../assets/images/inbox-icon.png")}
-              style={{ width: 25, height: 25 }}
+              style={{
+                width: 25,
+                height: 25,
+                tintColor: focused ? activeColor : "gray",
+              }}
             />
           ),
         }}
