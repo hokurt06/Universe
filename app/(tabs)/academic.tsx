@@ -5,217 +5,126 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Modal,
 } from "react-native";
-import { useRouter } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const AcademicScreen: React.FC = () => {
-  const [selectedTerm, setSelectedTerm] = useState<string>("");
-  const [terms, setTerms] = useState<{ key: string; label: string }[]>([]);
-  const [showTermModal, setShowTermModal] = useState<boolean>(false);
-  const [courses, setCourses] = useState<any[]>([]);
-  const [selectedCourse, setSelectedCourse] = useState<any | null>(null); // New state for selected course
+  const [viewMode, setViewMode] = useState<"academic" | "advisors">("academic"); // Default to academic
+  const [academicItems, setAcademicItems] = useState<any[]>([]);
 
-  const router = useRouter();
-
-  // Fetch terms from the API
+  // Sample academic data (replace with actual API call if needed)
   useEffect(() => {
-    const fetchTerms = async () => {
-      try {
-        const token = await AsyncStorage.getItem("authToken");
-        if (token) {
-          const response = await fetch(
-            "https://universe.terabytecomputing.com:3000/api/v1/terms",
-            {
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-          const data = await response.json();
-          if (data.terms && Array.isArray(data.terms)) {
-            const termOptions = data.terms.map((term: string) => ({
-              key: term,
-              label: term,
-            }));
-            setTerms(termOptions);
-            if (!selectedTerm && termOptions.length > 0) {
-              setSelectedTerm(termOptions[0].label);
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching terms:", error);
-      }
-    };
-
-    fetchTerms();
-  }, [selectedTerm]);
-
-  // Fetch user's enrollments from the API
-  useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        const token = await AsyncStorage.getItem("authToken");
-        if (token) {
-          const response = await fetch(
-            "https://universe.terabytecomputing.com:3000/api/v1/enrollments",
-            {
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-          const data = await response.json();
-          if (data.enrollments) {
-            setCourses(data.enrollments);
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching courses:", error);
-      }
-    };
-
-    fetchCourses();
+    setAcademicItems([
+      {
+        id: "1",
+        course: "Calculus I (MATH 101)",
+        type: "Assignment",
+        details: "Homework 1 - Due March 10, 2025",
+      },
+      {
+        id: "2",
+        course: "Introduction to Physics (PHYS 101)",
+        type: "Grade",
+        details: "Quiz 1 - 85%",
+      },
+      {
+        id: "3",
+        course: "Computer Science Fundamentals (CS 101)",
+        type: "Assignment",
+        details: "Project 1 - Due March 15, 2025",
+      },
+    ]);
   }, []);
 
-  // Filter courses based on the selected term
-  const coursesForTerm = courses.filter(
-    (course) => course.quarter === selectedTerm
-  );
+  // Sample advisor data (replace with actual API call if needed)
+  const sampleAdvisors = [
+    {
+      id: 1,
+      name: "Dr. Jane Smith",
+      department: "Mathematics",
+      email: "jane.smith@university.edu",
+      office: "Room 305, Math Building",
+    },
+    {
+      id: 2,
+      name: "Prof. Michael Lee",
+      department: "Physics",
+      email: "michael.lee@university.edu",
+      office: "Room 112, Science Hall",
+    },
+    {
+      id: 3,
+      name: "Dr. Emily Chen",
+      department: "Computer Science",
+      email: "emily.chen@university.edu",
+      office: "Room 420, Tech Center",
+    },
+  ];
 
-  // Open course details
-  const openCourse = (course: any) => {
-    setSelectedCourse(course);
-  };
-
-  // Close course details
-  const closeCourse = () => {
-    setSelectedCourse(null);
-  };
-
-  // Fullscreen Course Detail View
-  if (selectedCourse) {
+  // Academic View (initial view)
+  if (viewMode === "academic") {
     return (
       <View style={styles.container}>
-        <Text style={styles.header}>Course Details</Text>
-        <ScrollView style={styles.courseDetailContainer}>
-          <Text style={styles.detailText}>
-            <Text style={styles.boldText}>Course: </Text>
-            {selectedCourse.title} ({selectedCourse.course_code})
-          </Text>
-          <Text style={styles.detailText}>
-            <Text style={styles.boldText}>Term: </Text>
-            {selectedCourse.quarter}
-          </Text>
-          <Text style={styles.detailText}>
-            <Text style={styles.boldText}>Grade: </Text>
-            {selectedCourse.grade ? selectedCourse.grade : "N/A"}
-          </Text>
-          {/* Add more course details here if available from API */}
-          <TouchableOpacity style={styles.backButton} onPress={closeCourse}>
-            <Text style={styles.backButtonText}>Back to Academics</Text>
+        <Text style={styles.header}>Academic</Text>
+        <View style={styles.academicWrapper}>
+          <ScrollView
+            style={styles.itemsContainer}
+            showsVerticalScrollIndicator={false}
+          >
+            {academicItems.length > 0 ? (
+              academicItems.map((item) => (
+                <View key={item.id} style={styles.itemCard}>
+                  <Text style={styles.courseText}>{item.course}</Text>
+                  <Text style={styles.itemText}>
+                    {item.type}: {item.details}
+                  </Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.noItemsText}>No academic items found</Text>
+            )}
+          </ScrollView>
+          {/* View Advisors Button styled like InboxScreen's backButton */}
+          <TouchableOpacity
+            style={styles.viewAdvisorsButton}
+            onPress={() => setViewMode("advisors")}
+          >
+            <Text style={styles.viewAdvisorsButtonText}>View Advisors</Text>
           </TouchableOpacity>
-        </ScrollView>
+        </View>
       </View>
     );
   }
 
-  // Initial Academic View
+  // Advisors View
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Academics</Text>
-
-      <View style={styles.card}>
-        <Text style={styles.gpa}>
-          GPA: <Text style={styles.boldText}>4.00</Text>
-        </Text>
-        <Text style={styles.credits}>
-          Total Credits: <Text style={styles.boldText}>20</Text>
-        </Text>
-      </View>
-
-      {/* Term Dropdown Button */}
+      <Text style={styles.header}>Advisors</Text>
       <TouchableOpacity
-        style={styles.dropdownButton}
-        onPress={() => setShowTermModal(true)}
+        style={styles.backButton}
+        onPress={() => setViewMode("academic")}
       >
-        <Text style={styles.dropdownText}>
-          {selectedTerm ? `${selectedTerm} ▼` : "Select Term"}
-        </Text>
+        <Text style={styles.backButtonText}>Back to Academic</Text>
       </TouchableOpacity>
-
-      {/* Term Modal */}
-      <Modal transparent animationType="fade" visible={showTermModal}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalHeader}>Select Term</Text>
-            {terms.map((option) => (
-              <TouchableOpacity
-                key={option.key}
-                style={styles.termOption}
-                onPress={() => {
-                  setSelectedTerm(option.label);
-                  setShowTermModal(false);
-                }}
-              >
-                <Text style={styles.termOptionText}>{option.label}</Text>
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setShowTermModal(false)}
-            >
-              <Text style={styles.closeButtonText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Class List */}
       <ScrollView
-        style={styles.classesContainer}
+        style={styles.advisorsContainer}
         showsVerticalScrollIndicator={false}
       >
-        {coursesForTerm.length > 0 ? (
-          coursesForTerm.map((course) => (
-            <TouchableOpacity
-              key={course.enrollment_id}
-              style={styles.classCard}
-              onPress={() => openCourse(course)} // Make course clickable
-            >
-              <View>
-                <Text style={styles.classText}>
-                  {course.title} ({course.course_code})
-                </Text>
-              </View>
-              <Text style={styles.grade}>
-                {course.grade ? course.grade : "N/A"}
-              </Text>
-            </TouchableOpacity>
-          ))
-        ) : (
-          <Text style={styles.noCoursesText}>
-            No courses found for {selectedTerm}
-          </Text>
-        )}
+        {sampleAdvisors.map((advisor) => (
+          <View key={advisor.id} style={styles.advisorCard}>
+            <Text style={styles.advisorNameText}>{advisor.name}</Text>
+            <Text style={styles.advisorText}>
+              Department: {advisor.department}
+            </Text>
+            <Text style={styles.advisorText}>Email: {advisor.email}</Text>
+            <Text style={styles.advisorText}>Office: {advisor.office}</Text>
+          </View>
+        ))}
       </ScrollView>
-
-      {/* Button to Navigate to Advisors Screen */}
-      <TouchableOpacity
-        style={styles.advisorsButton}
-        onPress={() => router.push("/advisors")}
-      >
-        <Text style={styles.advisorsButtonText}>View Advisors</Text>
-      </TouchableOpacity>
     </View>
   );
 };
 
-// Updated Styles
+// Styles - adapted from InboxScreen and CourseSchedule
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -229,57 +138,15 @@ const styles = StyleSheet.create({
     color: "#1C1C1E",
     marginBottom: 15,
   },
-  card: {
-    backgroundColor: "#FFFFFF",
+  academicWrapper: {
+    flex: 1,
     width: "90%",
-    padding: 20,
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
-    elevation: 3,
-    marginBottom: 20,
+    justifyContent: "space-between", // Ensures button stays at bottom
   },
-  gpa: {
-    fontSize: 22,
-    fontWeight: "500",
-    color: "#333",
-    textAlign: "center",
+  itemsContainer: {
+    flex: 1, // Takes up available space above the button
   },
-  credits: {
-    fontSize: 18,
-    fontWeight: "400",
-    color: "#666",
-    textAlign: "center",
-    marginTop: 5,
-  },
-  boldText: {
-    fontWeight: "700",
-    color: "#000",
-  },
-  dropdownButton: {
-    backgroundColor: "#FFFFFF",
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    borderRadius: 12,
-    elevation: 3,
-    alignItems: "center",
-    marginBottom: 15,
-    width: "90%",
-  },
-  dropdownText: {
-    fontSize: 20,
-    fontWeight: "500",
-    color: "#007AFF",
-  },
-  classesContainer: {
-    width: "90%",
-    maxHeight: "60%",
-  },
-  classCard: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+  itemCard: {
     backgroundColor: "#FFFFFF",
     padding: 15,
     borderRadius: 12,
@@ -289,111 +156,71 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 2,
   },
-  classText: {
+  courseText: {
     fontSize: 18,
     fontWeight: "500",
     color: "#222",
+    marginBottom: 5,
   },
-  grade: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#007AFF",
+  itemText: {
+    fontSize: 16,
+    color: "#555",
   },
-  noCoursesText: {
+  noItemsText: {
     fontSize: 18,
     color: "#666",
     textAlign: "center",
     marginTop: 20,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
+  viewAdvisorsButton: {
+    backgroundColor: "#007AFF", // Matches InboxScreen backButton
+    paddingVertical: 12, // Matches InboxScreen backButton
+    paddingHorizontal: 30, // Matches InboxScreen backButton
+    borderRadius: 12, // Matches InboxScreen backButton
+    alignSelf: "center", // Centers the button horizontally
+    marginTop: 10, // Matches InboxScreen backButton spacing
+    marginBottom: 20, // Adds some spacing at the bottom
   },
-  modalContent: {
-    backgroundColor: "#FFFFFF",
-    width: "80%",
-    padding: 20,
-    borderRadius: 16,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  modalHeader: {
-    fontSize: 22,
-    fontWeight: "600",
-    color: "#1C1C1E",
-    marginBottom: 15,
-  },
-  termOption: {
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    width: "100%",
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  termOptionText: {
-    fontSize: 18,
-    color: "#007AFF",
-    textAlign: "center",
-  },
-  closeButton: {
-    backgroundColor: "#007AFF",
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 12,
-    marginTop: 20,
-  },
-  closeButtonText: {
-    fontSize: 18,
-    fontWeight: "500",
-    color: "#FFFFFF",
-  },
-  advisorsButton: {
-    backgroundColor: "#007AFF",
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 12,
-    marginTop: 20,
-    width: "90%",
-    alignItems: "center",
-  },
-  advisorsButtonText: {
-    fontSize: 18,
-    fontWeight: "500",
-    color: "#FFFFFF",
-  },
-  // New styles for course detail view
-  courseDetailContainer: {
-    width: "90%",
-    backgroundColor: "#FFFFFF",
-    padding: 20,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  detailText: {
-    fontSize: 18,
-    color: "#555",
-    marginBottom: 15,
+  viewAdvisorsButtonText: {
+    fontSize: 18, // Matches InboxScreen backButtonText
+    fontWeight: "500", // Matches InboxScreen backButtonText
+    color: "#FFFFFF", // Matches InboxScreen backButtonText
   },
   backButton: {
-    backgroundColor: "#007AFF",
-    paddingVertical: 12,
-    paddingHorizontal: 30,
+    backgroundColor: "#FF2D55",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     borderRadius: 12,
-    alignSelf: "center",
-    marginTop: 20,
+    marginBottom: 15,
   },
   backButtonText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "500",
     color: "#FFFFFF",
+  },
+  advisorsContainer: {
+    width: "90%",
+    flex: 1, // Takes up available space
+  },
+  advisorCard: {
+    backgroundColor: "#FFFFFF",
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.07,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  advisorNameText: {
+    fontSize: 18,
+    fontWeight: "500",
+    color: "#222",
+    marginBottom: 5,
+  },
+  advisorText: {
+    fontSize: 16,
+    color: "#555",
   },
 });
 
