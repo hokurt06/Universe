@@ -26,8 +26,8 @@ export default function TabLayout() {
           title: "Home",
           tabBarIcon: () => (
             <Image
-              source={require("../../assets/images/applogo.png")}
-              style={{ width: 25, height: 25 }}
+              source={require("../../assets/images/home.png")}
+              style={{ width: 27, height: 27 }}
             />
           ),
         }}
@@ -40,8 +40,8 @@ export default function TabLayout() {
           title: "Academic",
           tabBarIcon: () => (
             <Image
-              source={require("../../assets/images/applogo.png")}
-              style={{ width: 25, height: 25 }}
+              source={require("../../assets/images/academic.png")}
+              style={{ width: 30, height: 30 }}
             />
           ),
         }}
@@ -54,8 +54,8 @@ export default function TabLayout() {
           title: "Schedule",
           tabBarIcon: () => (
             <Image
-              source={require("../../assets/images/applogo.png")}
-              style={{ width: 25, height: 25 }}
+              source={require("../../assets/images/schedule.png")}
+              style={{ width: 23, height: 23 }}
             />
           ),
         }}
@@ -68,7 +68,7 @@ export default function TabLayout() {
           title: "Inbox",
           tabBarIcon: () => (
             <Image
-              source={require("../../assets/images/applogo.png")}
+              source={require("../../assets/images/inbox-icon.png")}
               style={{ width: 25, height: 25 }}
             />
           ),
