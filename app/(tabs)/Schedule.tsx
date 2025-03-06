@@ -162,12 +162,12 @@ const CourseSchedule: React.FC = () => {
               </Text>
             )}
           </ScrollView>
-          {/* View Exams Button moved to bottom */}
+          {/* View Exams Button styled like InboxScreen's backButton */}
           <TouchableOpacity
-            style={styles.examsButton}
+            style={styles.viewExamsButton}
             onPress={() => setViewMode("exams")}
           >
-            <Text style={styles.examsButtonText}>View Exams</Text>
+            <Text style={styles.viewExamsButtonText}>View Exams</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -271,19 +271,19 @@ const styles = StyleSheet.create({
     width: "90%",
     justifyContent: "space-between", // Ensures button stays at bottom
   },
-  examsButton: {
-    backgroundColor: "#007AFF",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    marginTop: 15,
-    marginBottom: 20, // Adds some spacing at the bottom
+  viewExamsButton: {
+    backgroundColor: "#007AFF", // Matches InboxScreen backButton
+    paddingVertical: 12, // Matches InboxScreen backButton
+    paddingHorizontal: 30, // Matches InboxScreen backButton
+    borderRadius: 12, // Matches InboxScreen backButton
     alignSelf: "center", // Centers the button horizontally
+    marginTop: 10, // Matches InboxScreen backButton spacing
+    marginBottom: 20, // Adds some spacing at the bottom
   },
-  examsButtonText: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#FFFFFF",
+  viewExamsButtonText: {
+    fontSize: 18, // Matches InboxScreen backButtonText
+    fontWeight: "500", // Matches InboxScreen backButtonText
+    color: "#FFFFFF", // Matches InboxScreen backButtonText
   },
   backButton: {
     backgroundColor: "#FF2D55",
