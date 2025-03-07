@@ -6,16 +6,23 @@ import {
   ScrollView,
   TouchableOpacity,
   Modal,
+  FlatList,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const CourseSchedule: React.FC = () => {
-  const [viewMode, setViewMode] = useState<"schedule" | "exams">("schedule"); // Default to schedule
+  const [viewMode, setViewMode] = useState<"schedule" | "exams">("schedule");
   const [selectedClass, setSelectedClass] = useState<number | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [selectedTerm, setSelectedTerm] = useState<string>("");
   const [terms, setTerms] = useState<{ key: string; label: string }[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const viewOptions = [
+    { key: "schedule", label: "Schedule" },
+    { key: "exams", label: "Exams" },
+  ];
 
   // Fetch terms from the API
   useEffect(() => {
@@ -50,7 +57,7 @@ const CourseSchedule: React.FC = () => {
     };
 
     fetchTerms();
-  }, [selectedTerm]);
+  }, []);
 
   // Fetch user's enrollments (schedule data) from the API
   useEffect(() => {
@@ -80,7 +87,6 @@ const CourseSchedule: React.FC = () => {
     fetchEnrollments();
   }, []);
 
-  // Filter courses based on the selected term (quarter)
   const coursesForTerm = courses.filter(
     (course) => course.quarter === selectedTerm
   );
@@ -99,7 +105,6 @@ const CourseSchedule: React.FC = () => {
     (course) => course.enrollment_id === selectedClass
   );
 
-  // Sample exam data (replace with API call if available)
   const sampleExams = [
     {
       id: 1,
@@ -121,8 +126,41 @@ const CourseSchedule: React.FC = () => {
     },
   ];
 
+  const renderDropdownItem = ({ item }: { item: { key: string; label: string } }) => (
+    <TouchableOpacity
+      style={styles.dropdownItem}
+      onPress={() => {
+        setViewMode(item.key as "schedule" | "exams");
+        setShowDropdown(false);
+      }}
+    >
+      <Text style={styles.dropdownItemText}>{item.label}</Text>
+    </TouchableOpacity>
+  );
+
   return (
     <View style={styles.container}>
+      {/* Dropdown Button */}
+      <View style={styles.dropdownContainer}>
+        <TouchableOpacity
+          style={styles.dropdownButton}
+          onPress={() => setShowDropdown(!showDropdown)}
+        >
+          <Text style={styles.dropdownButtonText}>
+            {viewMode === "schedule" ? "Schedule" : "Exams"}
+          </Text>
+        </TouchableOpacity>
+        {showDropdown && (
+          <View style={styles.dropdownMenu}>
+            <FlatList
+              data={viewOptions}
+              renderItem={renderDropdownItem}
+              keyExtractor={(item) => item.key}
+            />
+          </View>
+        )}
+      </View>
+
       <Text style={styles.header}>
         {viewMode === "schedule" ? "Course Schedule" : "Exam Schedule"}
       </Text>
@@ -132,68 +170,51 @@ const CourseSchedule: React.FC = () => {
 
       {/* Schedule View */}
       {viewMode === "schedule" && (
-        <View style={styles.scheduleWrapper}>
-          <ScrollView
-            style={styles.classesContainer}
-            showsVerticalScrollIndicator={false}
-          >
-            {coursesForTerm.length > 0 ? (
-              coursesForTerm.map((course) => (
-                <TouchableOpacity
-                  key={course.enrollment_id}
-                  style={styles.classCard}
-                  onPress={() => openModal(course.enrollment_id)}
-                >
-                  <Text style={styles.classText}>
-                    {course.title} ({course.course_code})
-                  </Text>
-                  <Text style={styles.timeText}>
-                    Section: {course.section_identifier}
-                  </Text>
-                  <Text style={styles.timeText}>Time: {course.meeting_time}</Text>
-                  <Text style={styles.locationText}>
-                    Location: {course.location_address}
-                  </Text>
-                </TouchableOpacity>
-              ))
-            ) : (
-              <Text style={styles.noCoursesText}>
-                No courses found for {selectedTerm}
-              </Text>
-            )}
-          </ScrollView>
-          {/* View Exams Button moved to bottom */}
-          <TouchableOpacity
-            style={styles.examsButton}
-            onPress={() => setViewMode("exams")}
-          >
-            <Text style={styles.examsButtonText}>View Exams</Text>
-          </TouchableOpacity>
-        </View>
+        <ScrollView
+          style={styles.classesContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          {coursesForTerm.length > 0 ? (
+            coursesForTerm.map((course) => (
+              <TouchableOpacity
+                key={course.enrollment_id}
+                style={styles.classCard}
+                onPress={() => openModal(course.enrollment_id)}
+              >
+                <Text style={styles.classText}>
+                  {course.title} ({course.course_code})
+                </Text>
+                <Text style={styles.timeText}>
+                  Section: {course.section_identifier}
+                </Text>
+                <Text style={styles.timeText}>Time: {course.meeting_time}</Text>
+                <Text style={styles.locationText}>
+                  Location: {course.location_address}
+                </Text>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <Text style={styles.noCoursesText}>
+              No courses found for {selectedTerm}
+            </Text>
+          )}
+        </ScrollView>
       )}
 
       {/* Exams View */}
       {viewMode === "exams" && (
-        <>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => setViewMode("schedule")}
-          >
-            <Text style={styles.backButtonText}>Back to Schedule</Text>
-          </TouchableOpacity>
-          <ScrollView
-            style={styles.examsContainer}
-            showsVerticalScrollIndicator={false}
-          >
-            {sampleExams.map((exam) => (
-              <View key={exam.id} style={styles.examCard}>
-                <Text style={styles.examCourseText}>{exam.subject}</Text>
-                <Text style={styles.examText}>Midterm: {exam.midterm}</Text>
-                <Text style={styles.examText}>Final: {exam.final}</Text>
-              </View>
-            ))}
-          </ScrollView>
-        </>
+        <ScrollView
+          style={styles.examsContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          {sampleExams.map((exam) => (
+            <View key={exam.id} style={styles.examCard}>
+              <Text style={styles.examCourseText}>{exam.subject}</Text>
+              <Text style={styles.examText}>Midterm: {exam.midterm}</Text>
+              <Text style={styles.examText}>Final: {exam.final}</Text>
+            </View>
+          ))}
+        </ScrollView>
       )}
 
       {/* Modal for Class Details */}
@@ -250,55 +271,65 @@ const CourseSchedule: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
     backgroundColor: "#F9F9F9",
-    paddingTop: 70,
+    paddingTop: 60, // Increased padding to move content down
+  },
+  dropdownContainer: {
+    width: "90%",
+    alignSelf: "center",
+    marginBottom: 20,
+  },
+  dropdownButton: {
+    backgroundColor: "#007AFF",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  dropdownButtonText: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#FFFFFF",
+  },
+  dropdownMenu: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
+    marginTop: 5,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
+    position: "absolute",
+    top: 45,
+    width: "100%",
+    zIndex: 1,
+  },
+  dropdownItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+  },
+  dropdownItemText: {
+    fontSize: 16,
+    color: "#333",
   },
   header: {
     fontSize: 26,
     fontWeight: "600",
     color: "#1C1C1E",
+    textAlign: "center",
     marginBottom: 15,
   },
   subHeader: {
     fontSize: 18,
     fontWeight: "500",
     color: "#007AFF",
+    textAlign: "center",
     marginBottom: 15,
-  },
-  scheduleWrapper: {
-    flex: 1,
-    width: "90%",
-    justifyContent: "space-between", // Ensures button stays at bottom
-  },
-  examsButton: {
-    backgroundColor: "#007AFF",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    marginTop: 15,
-    marginBottom: 20, // Adds some spacing at the bottom
-    alignSelf: "center", // Centers the button horizontally
-  },
-  examsButtonText: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#FFFFFF",
-  },
-  backButton: {
-    backgroundColor: "#FF2D55",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    marginBottom: 15,
-  },
-  backButtonText: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#FFFFFF",
   },
   classesContainer: {
-    flex: 1, // Takes up available space above the button
+    width: "90%",
+    alignSelf: "center",
+    flex: 1,
   },
   classCard: {
     backgroundColor: "#FFFFFF",
@@ -376,7 +407,8 @@ const styles = StyleSheet.create({
   },
   examsContainer: {
     width: "90%",
-    flex: 1, // Takes up available space
+    alignSelf: "center",
+    flex: 1,
   },
   examCard: {
     backgroundColor: "#FFFFFF",

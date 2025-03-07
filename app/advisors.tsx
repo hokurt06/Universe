@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Modal,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import moment from "moment";
@@ -17,9 +17,8 @@ const AdvisorsScreen: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedAdvisor, setSelectedAdvisor] = useState<any>(null);
   const [advisors, setAdvisors] = useState<any[]>([]);
-  const navigation = useNavigation();
+  const router = useRouter();
 
-  // Fetch user's advisors from the API
   useEffect(() => {
     const fetchAdvisors = async () => {
       try {
@@ -47,13 +46,11 @@ const AdvisorsScreen: React.FC = () => {
     fetchAdvisors();
   }, []);
 
-  // Handle date selection from the picker
   const handleDateConfirm = (date: Date) => {
     setSelectedDate(moment(date).format("MMMM Do YYYY, h:mm A"));
     setDatePickerVisible(false);
   };
 
-  // Open date picker for the selected advisor
   const handleSchedulePress = (advisor: any) => {
     setSelectedAdvisor(advisor);
     setDatePickerVisible(true);
@@ -62,33 +59,20 @@ const AdvisorsScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Advisors</Text>
-
-      {/* Advisor List */}
       <ScrollView style={styles.advisorList}>
         {advisors.length > 0 ? (
           advisors.map((advisor, index) => (
             <View key={index} style={styles.advisorCard}>
-              {/* Display the advisor title */}
               <Text style={styles.advisorTitle}>{advisor.title}</Text>
               <Text style={styles.advisorName}>{advisor.name}</Text>
-              <Text style={styles.advisorDetail}>
-                Phone: {advisor.phone_number}
-              </Text>
-              <Text style={styles.advisorDetail}>
-                Office: {advisor.office_address}
-              </Text>
-              <Text style={styles.advisorDetail}>
-                Office Hours: {advisor.office_hours}
-              </Text>
-
-              {/* Button to Schedule Appointment */}
+              <Text style={styles.advisorDetail}>Phone: {advisor.phone_number}</Text>
+              <Text style={styles.advisorDetail}>Office: {advisor.office_address}</Text>
+              <Text style={styles.advisorDetail}>Office Hours: {advisor.office_hours}</Text>
               <TouchableOpacity
                 style={styles.scheduleButton}
                 onPress={() => handleSchedulePress(advisor)}
               >
-                <Text style={styles.scheduleButtonText}>
-                  Schedule Appointment
-                </Text>
+                <Text style={styles.scheduleButtonText}>Schedule Appointment</Text>
               </TouchableOpacity>
             </View>
           ))
@@ -96,30 +80,18 @@ const AdvisorsScreen: React.FC = () => {
           <Text style={styles.noAdvisorsText}>No advisors found.</Text>
         )}
       </ScrollView>
-
-      {/* Date Picker Modal */}
       <DateTimePickerModal
         isVisible={isDatePickerVisible}
         mode="datetime"
         onConfirm={handleDateConfirm}
         onCancel={() => setDatePickerVisible(false)}
       />
-
-      {/* Appointment Confirmation Modal */}
       {selectedDate && selectedAdvisor && (
-        <Modal
-          transparent={true}
-          animationType="slide"
-          visible={selectedDate !== ""}
-        >
+        <Modal transparent={true} animationType="slide" visible={selectedDate !== ""}>
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
-              <Text style={styles.modalHeader}>
-                Appointment Scheduled with {selectedAdvisor.name}
-              </Text>
-              <Text style={styles.modalBody}>
-                Your appointment is scheduled for: {selectedDate}
-              </Text>
+              <Text style={styles.modalHeader}>Appointment Scheduled with {selectedAdvisor.name}</Text>
+              <Text style={styles.modalBody}>Your appointment is scheduled for: {selectedDate}</Text>
               <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => setSelectedDate("")}
@@ -137,103 +109,91 @@ const AdvisorsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
-    backgroundColor: "#F9F9F9",
-    paddingTop: 50,
+    padding: 16,
+    backgroundColor: "#fff",
   },
   header: {
-    fontSize: 26,
-    fontWeight: "600",
-    color: "#1C1C1E",
-    marginBottom: 15,
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 16,
+    textAlign: "center", // Ensure visibility
   },
   advisorList: {
-    width: "90%",
+    flex: 1,
   },
   advisorCard: {
-    backgroundColor: "#FFFFFF",
-    padding: 20,
-    marginBottom: 15,
-    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 8,
     shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowRadius: 4,
+    elevation: 2,
   },
   advisorTitle: {
     fontSize: 18,
-    fontWeight: "600",
-    color: "#007AFF",
-    marginBottom: 3,
+    fontWeight: "bold",
+    textAlign: "center", // Center advisor title for visibility
   },
   advisorName: {
-    fontSize: 22,
-    fontWeight: "600",
-    color: "#333",
+    fontSize: 16,
+    marginBottom: 8,
+    textAlign: "center", // Center name
   },
   advisorDetail: {
-    fontSize: 16,
-    color: "#666",
-    marginTop: 5,
+    fontSize: 14,
+    marginBottom: 4,
+    textAlign: "center", // Center details for better readability
   },
   scheduleButton: {
-    backgroundColor: "#007AFF",
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 12,
-    marginTop: 15,
-    alignItems: "center",
+    marginTop: 8,
+    padding: 12,
+    backgroundColor: "#007bff",
+    borderRadius: 4,
   },
   scheduleButtonText: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#fff",
+    textAlign: "center",
+    fontWeight: "bold",
   },
   noAdvisorsText: {
-    fontSize: 18,
-    color: "#666",
     textAlign: "center",
-    marginTop: 20,
+    marginTop: 16,
+    fontSize: 16,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContent: {
-    backgroundColor: "#FFFFFF",
     width: "80%",
-    padding: 20,
-    borderRadius: 12,
+    padding: 16,
+    backgroundColor: "#fff",
+    borderRadius: 8,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 3,
   },
   modalHeader: {
-    fontSize: 22,
-    fontWeight: "600",
-    color: "#1C1C1E",
-    marginBottom: 10,
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 8,
   },
   modalBody: {
-    fontSize: 18,
-    fontWeight: "400",
-    color: "#333",
-    marginBottom: 20,
+    fontSize: 16,
+    marginBottom: 16,
   },
   closeButton: {
-    backgroundColor: "#007AFF",
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 12,
+    padding: 12,
+    backgroundColor: "#007bff",
+    borderRadius: 4,
   },
   closeButtonText: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#fff",
+    textAlign: "center",
+    fontWeight: "bold",
   },
 });
 
