@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Modal,
+  SafeAreaView,
 } from "react-native";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -15,7 +16,7 @@ const AcademicScreen: React.FC = () => {
   const [terms, setTerms] = useState<{ key: string; label: string }[]>([]);
   const [showTermModal, setShowTermModal] = useState<boolean>(false);
   const [courses, setCourses] = useState<any[]>([]);
-  const [selectedCourse, setSelectedCourse] = useState<any | null>(null); // New state for selected course
+  const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
 
   const router = useRouter();
 
@@ -100,128 +101,136 @@ const AcademicScreen: React.FC = () => {
   // Fullscreen Course Detail View
   if (selectedCourse) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.header}>Course Details</Text>
-        <ScrollView style={styles.courseDetailContainer}>
-          <Text style={styles.detailText}>
-            <Text style={styles.boldText}>Course: </Text>
-            {selectedCourse.title} ({selectedCourse.course_code})
-          </Text>
-          <Text style={styles.detailText}>
-            <Text style={styles.boldText}>Term: </Text>
-            {selectedCourse.quarter}
-          </Text>
-          <Text style={styles.detailText}>
-            <Text style={styles.boldText}>Grade: </Text>
-            {selectedCourse.grade ? selectedCourse.grade : "N/A"}
-          </Text>
-          {/* Add more course details here if available from API */}
-          <TouchableOpacity style={styles.backButton} onPress={closeCourse}>
-            <Text style={styles.backButtonText}>Back to Academics</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </View>
+      <SafeAreaView style={styles.safeContainer}>
+        <View style={styles.container}>
+          <Text style={styles.header}>Course Details</Text>
+          <ScrollView style={styles.courseDetailContainer}>
+            <Text style={styles.detailText}>
+              <Text style={styles.boldText}>Course: </Text>
+              {selectedCourse.title} ({selectedCourse.course_code})
+            </Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.boldText}>Term: </Text>
+              {selectedCourse.quarter}
+            </Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.boldText}>Grade: </Text>
+              {selectedCourse.grade ? selectedCourse.grade : "N/A"}
+            </Text>
+            <TouchableOpacity style={styles.backButton} onPress={closeCourse}>
+              <Text style={styles.backButtonText}>Back to Academics</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </SafeAreaView>
     );
   }
 
   // Initial Academic View
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Academics</Text>
+    <SafeAreaView style={styles.safeContainer}>
+      <View style={styles.container}>
+        <Text style={styles.header}>Academics</Text>
 
-      <View style={styles.card}>
-        <Text style={styles.gpa}>
-          GPA: <Text style={styles.boldText}>4.00</Text>
-        </Text>
-        <Text style={styles.credits}>
-          Total Credits: <Text style={styles.boldText}>20</Text>
-        </Text>
-      </View>
-
-      {/* Term Dropdown Button */}
-      <TouchableOpacity
-        style={styles.dropdownButton}
-        onPress={() => setShowTermModal(true)}
-      >
-        <Text style={styles.dropdownText}>
-          {selectedTerm ? `${selectedTerm} ▼` : "Select Term"}
-        </Text>
-      </TouchableOpacity>
-
-      {/* Term Modal */}
-      <Modal transparent animationType="fade" visible={showTermModal}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalHeader}>Select Term</Text>
-            {terms.map((option) => (
-              <TouchableOpacity
-                key={option.key}
-                style={styles.termOption}
-                onPress={() => {
-                  setSelectedTerm(option.label);
-                  setShowTermModal(false);
-                }}
-              >
-                <Text style={styles.termOptionText}>{option.label}</Text>
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setShowTermModal(false)}
-            >
-              <Text style={styles.closeButtonText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Class List */}
-      <ScrollView
-        style={styles.classesContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        {coursesForTerm.length > 0 ? (
-          coursesForTerm.map((course) => (
-            <TouchableOpacity
-              key={course.enrollment_id}
-              style={styles.classCard}
-              onPress={() => openCourse(course)} // Make course clickable
-            >
-              <View>
-                <Text style={styles.classText}>
-                  {course.title} ({course.course_code})
-                </Text>
-              </View>
-              <Text style={styles.grade}>
-                {course.grade ? course.grade : "N/A"}
-              </Text>
-            </TouchableOpacity>
-          ))
-        ) : (
-          <Text style={styles.noCoursesText}>
-            No courses found for {selectedTerm}
+        <View style={styles.card}>
+          <Text style={styles.gpa}>
+            GPA: <Text style={styles.boldText}>4.00</Text>
           </Text>
-        )}
-      </ScrollView>
+          <Text style={styles.credits}>
+            Total Credits: <Text style={styles.boldText}>20</Text>
+          </Text>
+        </View>
 
-      {/* Button to Navigate to Advisors Screen */}
-      <TouchableOpacity
-        style={styles.advisorsButton}
-        onPress={() => router.push("/advisors")}
-      >
-        <Text style={styles.advisorsButtonText}>View Advisors</Text>
-      </TouchableOpacity>
-    </View>
+        {/* Term Dropdown Button */}
+        <TouchableOpacity
+          style={styles.dropdownButton}
+          onPress={() => setShowTermModal(true)}
+        >
+          <Text style={styles.dropdownText}>
+            {selectedTerm ? `${selectedTerm} ▼` : "Select Term"}
+          </Text>
+        </TouchableOpacity>
+
+        {/* Term Modal */}
+        <Modal transparent animationType="fade" visible={showTermModal}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalHeader}>Select Term</Text>
+              {terms.map((option) => (
+                <TouchableOpacity
+                  key={option.key}
+                  style={styles.termOption}
+                  onPress={() => {
+                    setSelectedTerm(option.label);
+                    setShowTermModal(false);
+                  }}
+                >
+                  <Text style={styles.termOptionText}>{option.label}</Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setShowTermModal(false)}
+              >
+                <Text style={styles.closeButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Class List */}
+        <ScrollView
+          style={styles.classesContainer}
+          contentContainerStyle={styles.classesContentContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          {coursesForTerm.length > 0 ? (
+            coursesForTerm.map((course) => (
+              <TouchableOpacity
+                key={course.enrollment_id}
+                style={styles.classCard}
+                onPress={() => openCourse(course)}
+              >
+                <View>
+                  <Text style={styles.classText}>
+                    {course.title} ({course.course_code})
+                  </Text>
+                </View>
+                <Text style={styles.grade}>
+                  {course.grade ? course.grade : "N/A"}
+                </Text>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <Text style={styles.noCoursesText}>
+              No courses found for {selectedTerm}
+            </Text>
+          )}
+        </ScrollView>
+
+        {/* Button to Navigate to Advisors Screen */}
+        <TouchableOpacity
+          style={styles.advisorsButton}
+          onPress={() => router.push("/advisors")}
+        >
+          <Text style={styles.advisorsButtonText}>View Advisors</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 };
 
 // Updated Styles
 const styles = StyleSheet.create({
+  safeContainer: {
+    flex: 1,
+    backgroundColor: "#F9F9F9",
+  },
   container: {
     flex: 1,
     alignItems: "center",
-    backgroundColor: "#F9F9F9",
-    paddingTop: 70,
+    paddingTop: 20,
+    paddingHorizontal: 10,
   },
   header: {
     fontSize: 26,
@@ -274,7 +283,10 @@ const styles = StyleSheet.create({
   },
   classesContainer: {
     width: "90%",
-    maxHeight: "60%",
+    flexGrow: 0,
+  },
+  classesContentContainer: {
+    paddingBottom: 100,
   },
   classCard: {
     flexDirection: "row",
@@ -353,20 +365,22 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
   advisorsButton: {
+    padding: 12,
     backgroundColor: "#007AFF",
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 12,
-    marginTop: 20,
+    borderRadius: 20,
     width: "90%",
     alignItems: "center",
+    position: "absolute",
+    bottom: 40,
+    left: "5%",
+    zIndex: 10,
   },
   advisorsButtonText: {
+    color: "#fff",
+    textAlign: "center",
+    fontWeight: "bold",
     fontSize: 18,
-    fontWeight: "500",
-    color: "#FFFFFF",
   },
-  // New styles for course detail view
   courseDetailContainer: {
     width: "90%",
     backgroundColor: "#FFFFFF",

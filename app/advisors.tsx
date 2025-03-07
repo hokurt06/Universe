@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,9 +6,9 @@ import {
   ScrollView,
   TouchableOpacity,
   Modal,
+  SafeAreaView,
 } from "react-native";
 import { useRouter } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import moment from "moment";
 
@@ -16,35 +16,32 @@ const AdvisorsScreen: React.FC = () => {
   const [isDatePickerVisible, setDatePickerVisible] = useState<boolean>(false);
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedAdvisor, setSelectedAdvisor] = useState<any>(null);
-  const [advisors, setAdvisors] = useState<any[]>([]);
   const router = useRouter();
 
-  useEffect(() => {
-    const fetchAdvisors = async () => {
-      try {
-        const token = await AsyncStorage.getItem("authToken");
-        if (token) {
-          const response = await fetch(
-            "https://universe.terabytecomputing.com:3000/api/v1/advisors",
-            {
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-          const data = await response.json();
-          if (data.advisors && Array.isArray(data.advisors)) {
-            setAdvisors(data.advisors);
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching advisors:", error);
-      }
-    };
-
-    fetchAdvisors();
-  }, []);
+  // Hardcoded advisors (no API fetch)
+  const advisors = [
+    {
+      title: "Financial Advisor",
+      name: "Jane Smith",
+      phone_number: "(555) 123-4567",
+      office_address: "Room 101, Finance Bldg",
+      office_hours: "Mon-Fri, 9 AM - 5 PM",
+    },
+    {
+      title: "International Advisor",
+      name: "Carlos Rivera",
+      phone_number: "(555) 987-6543",
+      office_address: "Room 202, Global Center",
+      office_hours: "Tue-Thu, 10 AM - 4 PM",
+    },
+    {
+      title: "Academic Advisor",
+      name: "Emily Johnson",
+      phone_number: "(555) 456-7890",
+      office_address: "Room 305, Academic Hall",
+      office_hours: "Mon-Wed, 8 AM - 3 PM",
+    },
+  ];
 
   const handleDateConfirm = (date: Date) => {
     setSelectedDate(moment(date).format("MMMM Do YYYY, h:mm A"));
@@ -56,112 +53,170 @@ const AdvisorsScreen: React.FC = () => {
     setDatePickerVisible(true);
   };
 
+  const handleBackToAcademics = () => {
+    router.back(); // Navigate back to the previous screen (AcademicScreen)
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Advisors</Text>
-      <ScrollView style={styles.advisorList}>
-        {advisors.length > 0 ? (
-          advisors.map((advisor, index) => (
+    <SafeAreaView style={styles.safeContainer}>
+      <View style={styles.container}>
+        <Text style={styles.header}>Advisors</Text>
+        <ScrollView
+          style={styles.advisorList}
+          contentContainerStyle={styles.advisorListContent}
+        >
+          {advisors.map((advisor, index) => (
             <View key={index} style={styles.advisorCard}>
               <Text style={styles.advisorTitle}>{advisor.title}</Text>
               <Text style={styles.advisorName}>{advisor.name}</Text>
-              <Text style={styles.advisorDetail}>Phone: {advisor.phone_number}</Text>
-              <Text style={styles.advisorDetail}>Office: {advisor.office_address}</Text>
-              <Text style={styles.advisorDetail}>Office Hours: {advisor.office_hours}</Text>
+              <Text style={styles.advisorDetail}>
+                Phone: {advisor.phone_number}
+              </Text>
+              <Text style={styles.advisorDetail}>
+                Office: {advisor.office_address}
+              </Text>
+              <Text style={styles.advisorDetail}>
+                Office Hours: {advisor.office_hours}
+              </Text>
               <TouchableOpacity
                 style={styles.scheduleButton}
                 onPress={() => handleSchedulePress(advisor)}
               >
-                <Text style={styles.scheduleButtonText}>Schedule Appointment</Text>
+                <Text style={styles.scheduleButtonText}>
+                  Schedule Appointment
+                </Text>
               </TouchableOpacity>
             </View>
-          ))
-        ) : (
-          <Text style={styles.noAdvisorsText}>No advisors found.</Text>
+          ))}
+        </ScrollView>
+
+        {/* Back to Academics Button */}
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={handleBackToAcademics}
+        >
+          <Text style={styles.backButtonText}>Back to Academics</Text>
+        </TouchableOpacity>
+
+        <DateTimePickerModal
+          isVisible={isDatePickerVisible}
+          mode="datetime"
+          onConfirm={handleDateConfirm}
+          onCancel={() => setDatePickerVisible(false)}
+        />
+        {selectedDate && selectedAdvisor && (
+          <Modal
+            transparent={true}
+            animationType="slide"
+            visible={selectedDate !== ""}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalHeader}>
+                  Appointment Scheduled with {selectedAdvisor.name}
+                </Text>
+                <Text style={styles.modalBody}>
+                  Your appointment is scheduled for: {selectedDate}
+                </Text>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setSelectedDate("")}
+                >
+                  <Text style={styles.closeButtonText}>Close</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
         )}
-      </ScrollView>
-      <DateTimePickerModal
-        isVisible={isDatePickerVisible}
-        mode="datetime"
-        onConfirm={handleDateConfirm}
-        onCancel={() => setDatePickerVisible(false)}
-      />
-      {selectedDate && selectedAdvisor && (
-        <Modal transparent={true} animationType="slide" visible={selectedDate !== ""}>
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalHeader}>Appointment Scheduled with {selectedAdvisor.name}</Text>
-              <Text style={styles.modalBody}>Your appointment is scheduled for: {selectedDate}</Text>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setSelectedDate("")}
-              >
-                <Text style={styles.closeButtonText}>Close</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-      )}
-    </View>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeContainer: {
+    flex: 1,
+    backgroundColor: "#F9F9F9",
+  },
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: "#fff",
+    paddingHorizontal: 16,
+    paddingTop: 20,
   },
   header: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 16,
-    textAlign: "center", // Ensure visibility
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#1C1C1E",
+    textAlign: "center",
+    marginBottom: 20,
   },
   advisorList: {
     flex: 1,
   },
+  advisorListContent: {
+    paddingBottom: 80, // Increased to ensure space for the back button
+  },
   advisorCard: {
-    padding: 16,
+    padding: 20,
     marginBottom: 16,
-    backgroundColor: "#f9f9f9",
-    borderRadius: 8,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
   advisorTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    textAlign: "center", // Center advisor title for visibility
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#333",
+    textAlign: "center",
+    marginBottom: 4,
   },
   advisorName: {
-    fontSize: 16,
-    marginBottom: 8,
-    textAlign: "center", // Center name
+    fontSize: 18,
+    color: "#222",
+    textAlign: "center",
+    marginBottom: 12,
   },
   advisorDetail: {
-    fontSize: 14,
-    marginBottom: 4,
-    textAlign: "center", // Center details for better readability
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    marginBottom: 6,
   },
   scheduleButton: {
-    marginTop: 8,
-    padding: 12,
-    backgroundColor: "#007bff",
-    borderRadius: 4,
+    marginTop: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    backgroundColor: "#007BFF",
+    borderRadius: 20,
+    alignSelf: "center",
   },
   scheduleButtonText: {
-    color: "#fff",
+    color: "#FFFFFF",
     textAlign: "center",
     fontWeight: "bold",
+    fontSize: 18,
   },
-  noAdvisorsText: {
+  backButton: {
+    position: "absolute",
+    bottom: 20,
+    left: "5%",
+    width: "90%",
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    backgroundColor: "#007BFF",
+    borderRadius: 20,
+    alignItems: "center",
+    zIndex: 10,
+  },
+  backButtonText: {
+    color: "#FFFFFF",
     textAlign: "center",
-    marginTop: 16,
-    fontSize: 16,
+    fontWeight: "bold",
+    fontSize: 18,
   },
   modalOverlay: {
     flex: 1,
@@ -170,30 +225,42 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContent: {
-    width: "80%",
-    padding: 16,
-    backgroundColor: "#fff",
-    borderRadius: 8,
+    width: "85%",
+    padding: 20,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
   },
   modalHeader: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 8,
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#1C1C1E",
+    marginBottom: 12,
+    textAlign: "center",
   },
   modalBody: {
-    fontSize: 16,
-    marginBottom: 16,
+    fontSize: 18,
+    color: "#555",
+    marginBottom: 20,
+    textAlign: "center",
   },
   closeButton: {
-    padding: 12,
-    backgroundColor: "#007bff",
-    borderRadius: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    backgroundColor: "#007BFF",
+    borderRadius: 20,
+    alignSelf: "center",
   },
   closeButtonText: {
-    color: "#fff",
+    color: "#FFFFFF",
     textAlign: "center",
     fontWeight: "bold",
+    fontSize: 18,
   },
 });
 
