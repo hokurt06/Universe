@@ -367,11 +367,11 @@ const styles = StyleSheet.create({
   advisorsButton: {
     padding: 12,
     backgroundColor: "#007AFF",
-    borderRadius: 20,
-    width: "90%",
+    borderRadius: 30,
+    width: "95%",
     alignItems: "center",
     position: "absolute",
-    bottom: 60, // Increased from 20 to 60 to move it above the tab bar
+    bottom: 60, 
     left: "5%",
     zIndex: 10,
   },
