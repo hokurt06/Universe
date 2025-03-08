@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Modal,
-  FlatList,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -17,12 +16,6 @@ const CourseSchedule: React.FC = () => {
   const [selectedTerm, setSelectedTerm] = useState<string>("");
   const [terms, setTerms] = useState<{ key: string; label: string }[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
-  const [showDropdown, setShowDropdown] = useState(false);
-
-  const viewOptions = [
-    { key: "schedule", label: "Schedule" },
-    { key: "exams", label: "Exams" },
-  ];
 
   // Fetch terms from the API
   useEffect(() => {
@@ -126,39 +119,42 @@ const CourseSchedule: React.FC = () => {
     },
   ];
 
-  const renderDropdownItem = ({ item }: { item: { key: string; label: string } }) => (
-    <TouchableOpacity
-      style={styles.dropdownItem}
-      onPress={() => {
-        setViewMode(item.key as "schedule" | "exams");
-        setShowDropdown(false);
-      }}
-    >
-      <Text style={styles.dropdownItemText}>{item.label}</Text>
-    </TouchableOpacity>
-  );
-
   return (
     <View style={styles.container}>
-      {/* Dropdown Button */}
-      <View style={styles.dropdownContainer}>
+      {/* Two Buttons for Schedule and Exams */}
+      <View style={styles.buttonContainer}>
         <TouchableOpacity
-          style={styles.dropdownButton}
-          onPress={() => setShowDropdown(!showDropdown)}
+          style={[
+            styles.toggleButton,
+            viewMode === "schedule" && styles.activeButton,
+          ]}
+          onPress={() => setViewMode("schedule")}
         >
-          <Text style={styles.dropdownButtonText}>
-            {viewMode === "schedule" ? "Schedule" : "Exams"}
+          <Text
+            style={[
+              styles.buttonText,
+              viewMode === "schedule" && styles.activeButtonText,
+            ]}
+          >
+            Schedule
           </Text>
         </TouchableOpacity>
-        {showDropdown && (
-          <View style={styles.dropdownMenu}>
-            <FlatList
-              data={viewOptions}
-              renderItem={renderDropdownItem}
-              keyExtractor={(item) => item.key}
-            />
-          </View>
-        )}
+        <TouchableOpacity
+          style={[
+            styles.toggleButton,
+            viewMode === "exams" && styles.activeButton,
+          ]}
+          onPress={() => setViewMode("exams")}
+        >
+          <Text
+            style={[
+              styles.buttonText,
+              viewMode === "exams" && styles.activeButtonText,
+            ]}
+          >
+            Exams
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <Text style={styles.header}>
@@ -272,45 +268,34 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F9F9F9",
-    paddingTop: 60, // Increased padding to move content down
+    paddingTop: 60,
   },
-  dropdownContainer: {
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
     width: "90%",
     alignSelf: "center",
     marginBottom: 20,
   },
-  dropdownButton: {
-    backgroundColor: "#007AFF",
+  toggleButton: {
+    backgroundColor: "#007AFF", // Default blue color to match screenshot
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
+    marginHorizontal: 5,
     alignItems: "center",
+    flex: 1, // Ensure equal width
   },
-  dropdownButtonText: {
+  activeButton: {
+    backgroundColor: "#007AFF", // Keep active state same as default for consistency
+  },
+  buttonText: {
     fontSize: 16,
     fontWeight: "500",
-    color: "#FFFFFF",
+    color: "#FFFFFF", // White text to match screenshot
   },
-  dropdownMenu: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
-    marginTop: 5,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
-    position: "absolute",
-    top: 45,
-    width: "100%",
-    zIndex: 1,
-  },
-  dropdownItem: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-  },
-  dropdownItemText: {
-    fontSize: 16,
-    color: "#333",
+  activeButtonText: {
+    color: "#FFFFFF", // Same as default for consistency
   },
   header: {
     fontSize: 26,
