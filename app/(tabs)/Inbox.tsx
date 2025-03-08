@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   },
   emailsContainer: {
     width: "90%",
-    maxHeight: "70%",
+    maxHeight: "75%",
   },
   emailCard: {
     backgroundColor: "#FFFFFF",

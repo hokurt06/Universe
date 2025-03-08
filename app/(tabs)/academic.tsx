@@ -110,7 +110,7 @@ const AcademicScreen: React.FC = () => {
               {selectedCourse.title} ({selectedCourse.course_code})
             </Text>
             <Text style={styles.detailText}>
-              <Text style={styles.boldText}>Term: </Text>
+              <Text style={styles.boldText}>Quarter: </Text>
               {selectedCourse.quarter}
             </Text>
             <Text style={styles.detailText}>
