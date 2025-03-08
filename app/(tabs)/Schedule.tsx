@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Modal,
+  FlatList,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -16,6 +17,12 @@ const CourseSchedule: React.FC = () => {
   const [selectedTerm, setSelectedTerm] = useState<string>("");
   const [terms, setTerms] = useState<{ key: string; label: string }[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const viewOptions = [
+    { key: "schedule", label: "Schedule" },
+    { key: "exams", label: "Exams" },
+  ];
 
   // Fetch terms from the API
   useEffect(() => {
@@ -119,98 +126,102 @@ const CourseSchedule: React.FC = () => {
     },
   ];
 
+  const renderDropdownItem = ({ item }: { item: { key: string; label: string } }) => (
+    <TouchableOpacity
+      style={styles.dropdownItem}
+      onPress={() => {
+        setViewMode(item.key as "schedule" | "exams");
+        setShowDropdown(false);
+      }}
+    >
+      <Text style={styles.dropdownItemText}>{item.label}</Text>
+    </TouchableOpacity>
+  );
+
   return (
     <View style={styles.container}>
-      {/* Two Buttons for Schedule and Exams */}
-      <View style={styles.buttonContainer}>
+      {/* Dropdown Button */}
+      <View style={styles.dropdownContainer}>
         <TouchableOpacity
-          style={[
-            styles.toggleButton,
-            viewMode === "schedule" && styles.activeButton,
-          ]}
-          onPress={() => setViewMode("schedule")}
+          style={styles.dropdownButton}
+          onPress={() => setShowDropdown(!showDropdown)}
         >
-          <Text
-            style={[
-              styles.buttonText,
-              viewMode === "schedule" && styles.activeButtonText,
-            ]}
-          >
-            Schedule
+          <Text style={styles.dropdownButtonText}>
+            {viewMode === "schedule" ? "Schedule" : "Exams"}
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.toggleButton,
-            viewMode === "exams" && styles.activeButton,
-          ]}
-          onPress={() => setViewMode("exams")}
-        >
-          <Text
-            style={[
-              styles.buttonText,
-              viewMode === "exams" && styles.activeButtonText,
-            ]}
-          >
-            Exams
-          </Text>
-        </TouchableOpacity>
+        {showDropdown && (
+          <View style={styles.dropdownOverlay}>
+            <FlatList
+              data={viewOptions}
+              renderItem={renderDropdownItem}
+              keyExtractor={(item) => item.key}
+            />
+          </View>
+        )}
       </View>
 
-      <Text style={styles.header}>
-        {viewMode === "schedule" ? "Course Schedule" : "Exam Schedule"}
-      </Text>
-      <Text style={styles.subHeader}>
-        Term: {selectedTerm || "Loading..."}
-      </Text>
+      {/* Main Content (Hidden when dropdown is open) */}
+      {!showDropdown && (
+        <>
+          <Text style={styles.header}>
+            {viewMode === "schedule" ? "Course Schedule" : "Exam Schedule"}
+          </Text>
+          <Text style={styles.subHeader}>
+            Term: {selectedTerm || "Loading..."}
+          </Text>
 
-      {/* Schedule View */}
-      {viewMode === "schedule" && (
-        <ScrollView
-          style={styles.classesContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          {coursesForTerm.length > 0 ? (
-            coursesForTerm.map((course) => (
-              <TouchableOpacity
-                key={course.enrollment_id}
-                style={styles.classCard}
-                onPress={() => openModal(course.enrollment_id)}
-              >
-                <Text style={styles.classText}>
-                  {course.title} ({course.course_code})
+          {/* Schedule View */}
+          {viewMode === "schedule" && (
+            <ScrollView
+              style={styles.classesContainer}
+              showsVerticalScrollIndicator={false}
+            >
+              {coursesForTerm.length > 0 ? (
+                coursesForTerm.map((course) => (
+                  <TouchableOpacity
+                    key={course.enrollment_id}
+                    style={styles.classCard}
+                    onPress={() => openModal(course.enrollment_id)}
+                  >
+                    <Text style={styles.classText}>
+                      {course.title} ({course.course_code})
+                    </Text>
+                    <Text style={styles.timeText}>
+                      Section: {course.section_identifier}
+                    </Text>
+                    <Text style={styles.timeText}>
+                      Time: {course.meeting_time}
+                    </Text>
+                    <Text style={styles.locationText}>
+                      Location: {course.location_address}
+                    </Text>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <Text style={styles.noCoursesText}>
+                  No courses found for {selectedTerm}
                 </Text>
-                <Text style={styles.timeText}>
-                  Section: {course.section_identifier}
-                </Text>
-                <Text style={styles.timeText}>Time: {course.meeting_time}</Text>
-                <Text style={styles.locationText}>
-                  Location: {course.location_address}
-                </Text>
-              </TouchableOpacity>
-            ))
-          ) : (
-            <Text style={styles.noCoursesText}>
-              No courses found for {selectedTerm}
-            </Text>
+              )}
+            </ScrollView>
           )}
-        </ScrollView>
-      )}
 
-      {/* Exams View */}
-      {viewMode === "exams" && (
-        <ScrollView
-          style={styles.examsContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          {sampleExams.map((exam) => (
-            <View key={exam.id} style={styles.examCard}>
-              <Text style={styles.examCourseText}>{exam.subject}</Text>
-              <Text style={styles.examText}>Midterm: {exam.midterm}</Text>
-              <Text style={styles.examText}>Final: {exam.final}</Text>
-            </View>
-          ))}
-        </ScrollView>
+          {/* Exams View */}
+          {viewMode === "exams" && (
+            <ScrollView
+              style={styles.examsContainer}
+              showsVerticalScrollIndicator={false}
+            >
+              {sampleExams.map((exam) => (
+                <View key={exam.id} style={styles.examCard}>
+                  <Text style={styles.examCourseText}>{exam.subject}</Text>
+                  <Text style={styles.examText}>Midterm: {exam.midterm}</Text>
+                  <Text style={styles.examText}>Final: {exam.final}</Text>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+        </>
       )}
 
       {/* Modal for Class Details */}
@@ -270,32 +281,41 @@ const styles = StyleSheet.create({
     backgroundColor: "#F9F9F9",
     paddingTop: 60,
   },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
+  dropdownContainer: {
     width: "90%",
     alignSelf: "center",
     marginBottom: 20,
+    zIndex: 10, // Ensure dropdown stays on top
   },
-  toggleButton: {
-    backgroundColor: "#007AFF", // Default blue color to match screenshot
+  dropdownButton: {
+    backgroundColor: "#007AFF",
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
-    marginHorizontal: 5,
     alignItems: "center",
-    flex: 1, // Ensure equal width
   },
-  activeButton: {
-    backgroundColor: "#007AFF", // Keep active state same as default for consistency
-  },
-  buttonText: {
+  dropdownButtonText: {
     fontSize: 16,
     fontWeight: "500",
-    color: "#FFFFFF", // White text to match screenshot
+    color: "#FFFFFF",
   },
-  activeButtonText: {
-    color: "#FFFFFF", // Same as default for consistency
+  dropdownOverlay: {
+    position: "absolute",
+    top: 50, // Position below the button
+    width: "100%",
+    zIndex: 20, // Ensure it floats above everything
+  },
+  dropdownItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: "#007AFF", // Match button style
+    borderRadius: 8,
+    marginVertical: 5,
+  },
+  dropdownItemText: {
+    fontSize: 16,
+    color: "#FFFFFF", // White text for contrast
+    textAlign: "center",
   },
   header: {
     fontSize: 26,
