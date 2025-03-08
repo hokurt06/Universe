@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: "center",
-    paddingTop: 20,
+    paddingTop: 10,
     paddingHorizontal: 10,
   },
   header: {
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
     flexGrow: 0,
   },
   classesContentContainer: {
-    paddingBottom: 100,
+    paddingBottom: 120, // Increased from 80 to 120 to account for button and tab bar height
   },
   classCard: {
     flexDirection: "row",
@@ -371,7 +371,7 @@ const styles = StyleSheet.create({
     width: "90%",
     alignItems: "center",
     position: "absolute",
-    bottom: 40,
+    bottom: 60, // Increased from 20 to 60 to move it above the tab bar
     left: "5%",
     zIndex: 10,
   },
