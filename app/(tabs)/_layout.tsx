@@ -93,4 +93,21 @@ export default function TabLayout() {
       />
     </Tabs>
   );
+  {/* Activity Tab */}
+  <Tabs.Screen
+        name="activity"
+        options={{
+          title: "Activity",
+          tabBarIcon: ({ focused }) => (
+            <Image
+              source={require("../../assets/images/activity.png")}
+              style={{
+                width: 25,
+                height: 25,
+                tintColor: focused ? activeColor : "gray",
+              }}
+            />
+          ),
+        }}
+      />
 }

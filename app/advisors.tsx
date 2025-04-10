@@ -18,7 +18,7 @@ const AdvisorsScreen: React.FC = () => {
   const [selectedAdvisor, setSelectedAdvisor] = useState<any>(null);
   const router = useRouter();
 
-  // Hardcoded advisors (no API fetch)
+  // Hardcoded 
   const advisors = [
     {
       title: "Financial Advisor",
