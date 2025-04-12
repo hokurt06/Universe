@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -7,553 +7,257 @@ import {
   FlatList,
   SafeAreaView,
   StatusBar,
-  ActivityIndicator,
-  Dimensions
+  ScrollView,
+  Modal
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import campusData from "../assets/campusActivities.json"; // adjust if needed
 
-// Define category data with icons - now using only medium blue theme
-interface Category {
-  id: string;
-  title: string;
-  icon: string;
-}
-
-const CATEGORIES: Category[] = [
+const CATEGORIES = [
   { id: "academic", title: "Academic", icon: "school" },
-  { id: "community", title: "Community", icon: "people" },
-  { id: "arts", title: "Arts", icon: "color-palette" },
-  { id: "career", title: "Career", icon: "briefcase" },
+  { id: "alumni", title: "Alumni", icon: "ribbon" },
+  { id: "community", title: "Community", icon: "leaf" },
+  { id: "arts", title: "Arts & Culture", icon: "color-palette" },
+  { id: "career", title: "Career Dev", icon: "briefcase" },
   { id: "student", title: "Student Life", icon: "happy" }
 ];
 
-// Theme colors - simplified to medium blue and white only
 const THEME = {
-  primary: "#3B82F6",     // Medium blue
-  primaryDark: "#2563EB", // Slightly darker blue for contrast
+  primary: "#3B82F6",
+  primaryDark: "#2563EB",
   white: "#FFFFFF",
-  text: "#1E3A8A",        // Dark blue text
-  textSecondary: "#3B82F6", // Medium blue for secondary text
-  background: "#FFFFFF",  // White background
-  border: "#3B82F6"       // Medium blue for borders
+  text: "#1E3A8A",
+  textSecondary: "#3B82F6",
+  background: "#FFFFFF",
+  border: "#3B82F6"
 };
 
-interface Event {
-  id: string;
-  name: string;
-  description: string;
-  date: string;
-  time: string;
-  location: string;
-  icon: string;
-  categoryId: string;
-}
-
-// Mock data with improved structure
-const MOCK_EVENTS: Event[] = [
-  // Academic Events
-  { 
-    id: "a1", 
-    name: "Advanced AI Lecture Series", 
-    description: "Join Professor Lee for an exploration of cutting-edge artificial intelligence concepts and applications.", 
-    date: "Apr 15", 
-    time: "2:00 PM", 
-    location: "Science Hall 302", 
-    icon: "school-outline",
-    categoryId: "academic" 
-  },
-  { 
-    id: "a2", 
-    name: "Math Problem-Solving Workshop", 
-    description: "Enhance your analytical thinking with challenging mathematical problems and collaborative solutions.", 
-    date: "Apr 20", 
-    time: "3:30 PM", 
-    location: "Math Building 101", 
-    icon: "calculator-outline",
-    categoryId: "academic" 
-  },
-  
-  // Community Events
-  { 
-    id: "c1", 
-    name: "Downtown Park Cleanup", 
-    description: "Help beautify our local green spaces while connecting with fellow volunteers.", 
-    date: "Apr 18", 
-    time: "9:00 AM", 
-    location: "Central Park Entrance", 
-    icon: "leaf-outline",
-    categoryId: "community" 
-  },
-  { 
-    id: "c2", 
-    name: "Campus Food Drive", 
-    description: "Contribute non-perishable items to support families in need within our community.", 
-    date: "Apr 22", 
-    time: "10:00 AM - 4:00 PM", 
-    location: "Student Union", 
-    icon: "fast-food-outline",
-    categoryId: "community" 
-  },
-  
-  // Arts Events
-  { 
-    id: "e1", 
-    name: "Student Art Exhibition", 
-    description: "Celebrate creativity at this showcase featuring works from talented student artists across disciplines.", 
-    date: "Apr 10", 
-    time: "5:00 PM - 8:00 PM", 
-    location: "Fine Arts Gallery", 
-    icon: "color-palette-outline",
-    categoryId: "arts" 
-  },
-  { 
-    id: "e2", 
-    name: "Spring Concert Series", 
-    description: "Enjoy live performances by student musicians and special guest artists.", 
-    date: "Apr 12", 
-    time: "7:00 PM", 
-    location: "Auditorium", 
-    icon: "musical-notes-outline",
-    categoryId: "arts" 
-  },
-  
-  // Career Events
-  { 
-    id: "d1", 
-    name: "Tech Career Fair", 
-    description: "Connect with leading employers from the technology sector about internship and job opportunities.", 
-    date: "Apr 16", 
-    time: "11:00 AM - 3:00 PM", 
-    location: "Engineering Building", 
-    icon: "briefcase-outline",
-    categoryId: "career" 
-  },
-  { 
-    id: "d2", 
-    name: "Resume & LinkedIn Workshop", 
-    description: "Learn how to optimize your professional profiles for maximum impact with recruiters.", 
-    date: "Apr 14", 
-    time: "1:00 PM", 
-    location: "Career Center", 
-    icon: "document-text-outline",
-    categoryId: "career" 
-  },
-  
-  // Student Life Events
-  { 
-    id: "s1", 
-    name: "Club Fair", 
-    description: "Discover the diverse range of student organizations and find your community on campus.", 
-    date: "Apr 17", 
-    time: "12:00 PM - 4:00 PM", 
-    location: "Main Quad", 
-    icon: "people-outline",
-    categoryId: "student" 
-  },
-  { 
-    id: "s2", 
-    name: "New Student Campus Tour", 
-    description: "Get oriented with key locations and resources available to support your success.", 
-    date: "Apr 19", 
-    time: "10:00 AM", 
-    location: "Visitor Center", 
-    icon: "navigate-outline",
-    categoryId: "student" 
-  },
-];
-
-const CategoryTab: React.FC<{
-  category: Category;
-  isSelected: boolean;
-  onPress: () => void;
-}> = ({ category, isSelected, onPress }) => {
-  return (
-    <TouchableOpacity
-      style={[
-        styles.categoryTab,
-        isSelected && styles.categoryTabSelected
-      ]}
-      onPress={onPress}
-    >
-      <Text 
-        style={[
-          styles.categoryLabel,
-          isSelected && styles.categoryLabelSelected
-        ]}
-      >
-        {category.title}
-      </Text>
-    </TouchableOpacity>
-  );
+const parseDate = (raw) => {
+  const timestamp = parseInt(raw.match(/\d+/)?.[0] || "0", 10);
+  return new Date(timestamp).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric"
+  });
 };
 
-const EventCard: React.FC<{
-  event: Event;
-  onPress: () => void;
-}> = ({ event, onPress }) => {
-  return (
-    <TouchableOpacity 
-      style={styles.eventCard} 
-      onPress={onPress}
-    >
-      <View style={styles.eventIconContainer}>
-        <Ionicons name={event.icon as any} size={24} color={THEME.primary} />
-      </View>
-      <View style={styles.eventContent}>
-        <View style={styles.eventHeader}>
-          <Text style={styles.eventName} numberOfLines={1}>{event.name}</Text>
-          <View style={styles.dateChip}>
-            <Text style={styles.dateText}>{event.date}</Text>
-          </View>
-        </View>
-        <Text style={styles.eventDescription} numberOfLines={2}>
-          {event.description}
-        </Text>
-        <View style={styles.eventDetails}>
-          <View style={styles.detailRow}>
-            <Ionicons name="time-outline" size={14} color={THEME.textSecondary} />
-            <Text style={styles.detailText}>{event.time}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Ionicons name="location-outline" size={14} color={THEME.textSecondary} />
-            <Text style={styles.detailText}>{event.location}</Text>
-          </View>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
+const parseTime = (raw) => {
+  const timestamp = parseInt(raw.match(/\d+/)?.[0] || "0", 10);
+  return new Date(timestamp).toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit"
+  });
 };
 
-const ActivityScreen: React.FC = () => {
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("academic");
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
-  
-  const selectedCategory = CATEGORIES.find(cat => cat.id === selectedCategoryId) || CATEGORIES[0];
+const formatEvents = (categoryId) => {
+  const categoryTitle = CATEGORIES.find(c => c.id === categoryId)?.title;
+  if (!categoryTitle) return [];
 
-  const fetchEvents = async (categoryId: string) => {
-    setLoading(true);
-    // Simulate API call with timeout
+  return campusData
+    .filter(item =>
+      item.Categories?.some(cat =>
+        cat.CategoryName.toLowerCase().includes(categoryTitle.toLowerCase())
+      )
+    )
+    .map(item => ({
+      id: item.EventKey,
+      name: item.Title,
+      description: item.Description || "No description available.",
+      date: parseDate(item.Start),
+      time: parseTime(item.Start),
+      location: "TBD",
+      icon: "calendar-outline",
+      categoryId,
+      categories: item.Categories
+    }));
+};
+
+const ActivityScreen = () => {
+  const [selectedCategoryId, setSelectedCategoryId] = React.useState("academic");
+  const [events, setEvents] = React.useState([]);
+  const [refreshing, setRefreshing] = React.useState(false);
+  const [modalVisible, setModalVisible] = React.useState(false);
+  const [selectedEvent, setSelectedEvent] = React.useState(null);
+
+  const fetchEvents = async (categoryId) => {
     setTimeout(() => {
-      const filteredEvents = MOCK_EVENTS.filter(event => event.categoryId === categoryId);
+      const filteredEvents = formatEvents(categoryId);
       setEvents(filteredEvents);
-      setLoading(false);
       setRefreshing(false);
-    }, 600);
+    }, 500);
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     fetchEvents(selectedCategoryId);
   }, [selectedCategoryId]);
 
-  const handleCategoryChange = (categoryId: string) => {
-    setSelectedCategoryId(categoryId);
-  };
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchEvents(selectedCategoryId);
-  };
-
-  const handleEventPress = (event: Event) => {
-    // In a real app, this would navigate to event details
-    console.log(`Viewing details for: ${event.name}`);
-    // Example: navigation.navigate('EventDetails', { eventId: event.id });
-  };
-
-  const handleAddEvent = () => {
-    // In a real app, this would navigate to add event screen
-    console.log(`Adding new event to category: ${selectedCategory.title}`);
-    // Example: navigation.navigate('AddEvent', { categoryId: selectedCategory.id });
-  };
-
-  // Simplified header with text only
   const renderHeader = () => (
     <View style={styles.headerContainer}>
       <View style={styles.headerTop}>
         <Text style={styles.screenTitle}>CAMPUS EVENTS</Text>
-        <TouchableOpacity style={styles.headerButton}>
-          <Text style={styles.headerButtonText}>Search</Text>
-        </TouchableOpacity>
       </View>
-      
-      <View style={styles.categoriesContainer}>
-        {CATEGORIES.map((category) => (
-          <CategoryTab
-            key={category.id}
-            category={category}
-            isSelected={selectedCategoryId === category.id}
-            onPress={() => handleCategoryChange(category.id)}
-          />
-        ))}
-      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesScroll}>
+        <View style={styles.categoriesContainer}>
+          {CATEGORIES.map((category) => (
+            <TouchableOpacity
+              key={category.id}
+              style={[styles.categoryTab, selectedCategoryId === category.id && styles.categoryTabSelected]}
+              onPress={() => setSelectedCategoryId(category.id)}
+            >
+              <Text style={[styles.categoryLabel, selectedCategoryId === category.id && styles.categoryLabelSelected]}>
+                {category.title}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
     </View>
   );
 
-  const renderEmptyState = () => (
-    <View style={styles.emptyState}>
-      <Text style={styles.emptyStateText}>
-        No upcoming events
-      </Text>
-      <Text style={styles.emptyStateSubtext}>
-        Check back later for new {selectedCategory.title.toLowerCase()} events
-      </Text>
-      <TouchableOpacity 
-        style={styles.emptyStateButton}
-        onPress={handleAddEvent}
-      >
-        <Text style={styles.emptyStateButtonText}>Create Event</Text>
-      </TouchableOpacity>
-    </View>
+  const renderItem = ({ item }) => (
+    <TouchableOpacity
+      style={styles.eventCard}
+      onPress={() => {
+        setSelectedEvent(item);
+        setModalVisible(true);
+      }}
+    >
+      <View style={styles.eventIconContainer}>
+        <Ionicons name={item.icon} size={24} color={THEME.primary} />
+      </View>
+      <View style={styles.eventContent}>
+        <View style={styles.eventHeader}>
+          <Text style={styles.eventName} numberOfLines={1}>{item.name}</Text>
+          <View style={styles.dateChip}>
+            <Text style={styles.dateText}>{item.date}</Text>
+          </View>
+        </View>
+        <Text style={styles.eventDescription} numberOfLines={2}>
+          {item.categories.map(
+            (cat) => `${cat.CategoryName}${cat.SubCategoryName ? ` – ${cat.SubCategoryName}` : ""}`
+          ).join(", ")}
+        </Text>
+      </View>
+    </TouchableOpacity>
   );
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={THEME.primary} />
-      
       {renderHeader()}
-      
       <View style={styles.eventsContainer}>
-        <View style={styles.titleRow}>
-          <Text style={styles.sectionTitle}>{selectedCategory.title} Events</Text>
-          <TouchableOpacity 
-            style={styles.addButton} 
-            onPress={handleAddEvent}
-          >
-            <Text style={styles.addButtonText}>+</Text>
-          </TouchableOpacity>
-        </View>
-        
-        {loading && !refreshing ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={THEME.primary} />
-          </View>
-        ) : (
-          <FlatList
-            data={events}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.eventsList}
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            renderItem={({ item }) => (
-              <EventCard
-                event={item}
-                onPress={() => handleEventPress(item)}
-              />
-            )}
-            ListEmptyComponent={renderEmptyState()}
-          />
-        )}
+        <FlatList
+          data={events}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.eventsList}
+          refreshing={refreshing}
+          onRefresh={() => fetchEvents(selectedCategoryId)}
+          renderItem={renderItem}
+        />
       </View>
+
+      {/* Modal */}
+<Modal visible={modalVisible} animationType="none" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            {selectedEvent && (
+              <>
+                <Text style={styles.modalTitle}>{selectedEvent.name}</Text>
+                <Text style={styles.modalDateTime}>{selectedEvent.date} at {selectedEvent.time}</Text>
+                <Text style={styles.modalDescription}>{selectedEvent.description}</Text>
+                <Text style={styles.modalLabel}>Location:</Text>
+                <Text style={styles.modalText}>{selectedEvent.location}</Text>
+                <Text style={styles.modalLabel}>Categories:</Text>
+                {selectedEvent.categories.map((cat, idx) => (
+                  <Text key={idx} style={styles.modalText}>
+                    • {cat.CategoryName}{cat.SubCategoryName ? ` – ${cat.SubCategoryName}` : ""}
+                  </Text>
+                ))}
+              </>
+            )}
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setModalVisible(false)}
+            >
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
 
-const { width } = Dimensions.get('window');
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: THEME.white,
-  },
-  headerContainer: {
-    backgroundColor: THEME.primary,
-    paddingBottom: 12,
-  },
-  headerTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 12,
-  },
-  screenTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: THEME.white,
-    letterSpacing: 1,
-  },
-  headerButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: THEME.white,
-  },
-  headerButtonText: {
-    fontSize: 14,
-    color: THEME.white,
-    fontWeight: "500",
-  },
-  categoriesContainer: {
-    flexDirection: "row",
-    paddingHorizontal: 12,
-    justifyContent: "space-between",
-  },
-  categoryTab: {
-    backgroundColor: THEME.white,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginHorizontal: 4,
-  },
-  categoryTabSelected: {
-    backgroundColor: THEME.primaryDark,
-  },
-  categoryLabel: {
-    fontSize: 13,
-    color: THEME.primary,
-    fontWeight: "500",
-    textAlign: "center",
-  },
-  categoryLabelSelected: {
-    color: THEME.white,
-  },
-  eventsContainer: {
-    flex: 1,
-    paddingTop: 16,
-  },
-  titleRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: THEME.primary,
-  },
-  addButton: {
-    backgroundColor: THEME.primary,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 2,
-    shadowColor: THEME.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-  },
-  addButtonText: {
-    color: THEME.white,
-    fontSize: 22,
-    fontWeight: "bold",
-    lineHeight: 24,
-  },
-  loadingContainer: {
+  container: { flex: 1, backgroundColor: THEME.background },
+  headerContainer: { backgroundColor: THEME.primary, paddingTop: 16, paddingBottom: 12, paddingHorizontal: 16 },
+  headerTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  screenTitle: { fontSize: 20, color: THEME.white, fontWeight: "bold" },
+  categoriesScroll: { marginTop: 8 },
+  categoriesContainer: { flexDirection: "row", paddingHorizontal: 12 },
+  categoryTab: { paddingVertical: 6, paddingHorizontal: 14, marginHorizontal: 6, borderRadius: 20, borderWidth: 1, borderColor: THEME.white, backgroundColor: THEME.primaryDark },
+  categoryTabSelected: { backgroundColor: THEME.white },
+  categoryLabel: { color: THEME.white, fontSize: 14, fontWeight: "500" },
+  categoryLabelSelected: { color: THEME.primaryDark },
+  eventsContainer: { flex: 1, paddingHorizontal: 16, paddingTop: 16 },
+  eventsList: { paddingBottom: 60 },
+  eventCard: { flexDirection: "row", backgroundColor: "#F9FAFB", borderRadius: 12, padding: 12, marginBottom: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
+  eventIconContainer: { justifyContent: "center", alignItems: "center", marginRight: 12 },
+  eventContent: { flex: 1 },
+  eventHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  eventName: { fontSize: 16, fontWeight: "bold", color: THEME.text, flex: 1, marginRight: 8 },
+  dateChip: { backgroundColor: THEME.primary, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
+  dateText: { color: THEME.white, fontSize: 12, fontWeight: "600" },
+  eventDescription: { fontSize: 14, color: "#4B5563", marginTop: 4 },
+
+  modalOverlay: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)"
   },
-  eventsList: {
-    padding: 12,
-    paddingBottom: 80,
-  },
-  eventCard: {
-    flexDirection: "row",
-    backgroundColor: THEME.white,
+  modalCard: {
+    width: "90%",
+    backgroundColor: "#fff",
     borderRadius: 12,
-    marginBottom: 16,
-    padding: 16,
-    elevation: 2,
-    shadowColor: THEME.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    borderLeftWidth: 4,
-    borderLeftColor: THEME.primary,
-    borderWidth: 1,
-    borderColor: THEME.border,
+    padding: 20,
+    elevation: 10
   },
-  eventIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 8,
-    backgroundColor: `${THEME.primary}15`,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  eventContent: {
-    flex: 1,
-  },
-  eventHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 4,
-  },
-  eventName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: THEME.text,
-    flex: 1,
-    marginRight: 8,
-  },
-  dateChip: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
-    backgroundColor: `${THEME.primary}15`,
-  },
-  dateText: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: THEME.primary,
-  },
-  eventDescription: {
-    fontSize: 14,
-    color: THEME.textSecondary,
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
     marginBottom: 8,
-    lineHeight: 20,
+    color: THEME.text
   },
-  eventDetails: {
-    marginTop: 4,
-  },
-  detailRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  detailText: {
-    fontSize: 12,
-    color: THEME.textSecondary,
-    marginLeft: 4,
-  },
-  emptyState: {
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 40,
-  },
-  emptyStateText: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginTop: 16,
-    color: THEME.primary,
-  },
-  emptyStateSubtext: {
+  modalDateTime: {
     fontSize: 14,
-    color: THEME.textSecondary,
+    marginBottom: 12,
+    color: "#374151"
+  },
+  modalDescription: {
+    fontSize: 14,
+    marginBottom: 10,
+    color: "#374151"
+  },
+  modalLabel: {
+    fontWeight: "bold",
     marginTop: 8,
-    textAlign: "center",
+    color: "#1E3A8A"
   },
-  emptyStateButton: {
-    marginTop: 24,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: THEME.primary,
+  modalText: {
+    color: "#374151",
+    fontSize: 14
   },
-  emptyStateButtonText: {
+  closeButton: {
+    marginTop: 20,
+    backgroundColor: THEME.primaryDark,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: "center"
+  },
+  closeButtonText: {
     color: THEME.white,
-    fontWeight: "600",
-  },
+    fontWeight: "bold"
+  }
 });
 
 export default ActivityScreen;
