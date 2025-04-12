@@ -91,16 +91,14 @@ export default function TabLayout() {
           ),
         }}
       />
-    </Tabs>
-  );
-  {/* Activity Tab */}
-  <Tabs.Screen
+      {/* Activity Tab */}
+      <Tabs.Screen
         name="activity"
         options={{
           title: "Activity",
           tabBarIcon: ({ focused }) => (
             <Image
-              source={require("../../assets/images/activity.png")}
+              source={require("../../assets/images/activityclubs.png")}
               style={{
                 width: 25,
                 height: 25,
@@ -110,4 +108,6 @@ export default function TabLayout() {
           ),
         }}
       />
+    </Tabs>
+  );
 }
