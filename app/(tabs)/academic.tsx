@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Ionicons } from "@expo/vector-icons";
 
 const AcademicScreen: React.FC = () => {
   const [selectedTerm, setSelectedTerm] = useState<string>("");
@@ -20,7 +21,6 @@ const AcademicScreen: React.FC = () => {
 
   const router = useRouter();
 
-  // Fetch terms from the API
   useEffect(() => {
     const fetchTerms = async () => {
       try {
@@ -55,7 +55,6 @@ const AcademicScreen: React.FC = () => {
     fetchTerms();
   }, [selectedTerm]);
 
-  // Fetch user's enrollments from the API
   useEffect(() => {
     const fetchCourses = async () => {
       try {
@@ -83,27 +82,32 @@ const AcademicScreen: React.FC = () => {
     fetchCourses();
   }, []);
 
-  // Filter courses based on the selected term
   const coursesForTerm = courses.filter(
     (course) => course.quarter === selectedTerm
   );
 
-  // Open course details
   const openCourse = (course: any) => {
     setSelectedCourse(course);
   };
 
-  // Close course details
   const closeCourse = () => {
     setSelectedCourse(null);
   };
 
-  // Fullscreen Course Detail View
   if (selectedCourse) {
     return (
       <SafeAreaView style={styles.safeContainer}>
         <View style={styles.container}>
+          {/* Back button with chevron */}
+          <TouchableOpacity
+            style={styles.backIconContainer}
+            onPress={closeCourse}
+          >
+            <Ionicons name="chevron-back" size={28} color="#007AFF" />
+          </TouchableOpacity>
+
           <Text style={styles.header}>Course Details</Text>
+
           <ScrollView style={styles.courseDetailContainer}>
             <Text style={styles.detailText}>
               <Text style={styles.boldText}>Course: </Text>
@@ -115,18 +119,14 @@ const AcademicScreen: React.FC = () => {
             </Text>
             <Text style={styles.detailText}>
               <Text style={styles.boldText}>Grade: </Text>
-              {selectedCourse.grade ? selectedCourse.grade : "N/A"}
+              {selectedCourse.grade || "N/A"}
             </Text>
-            <TouchableOpacity style={styles.backButton} onPress={closeCourse}>
-              <Text style={styles.backButtonText}>Back to Academics</Text>
-            </TouchableOpacity>
           </ScrollView>
         </View>
       </SafeAreaView>
     );
   }
 
-  // Initial Academic View
   return (
     <SafeAreaView style={styles.safeContainer}>
       <View style={styles.container}>
@@ -141,7 +141,6 @@ const AcademicScreen: React.FC = () => {
           </Text>
         </View>
 
-        {/* Term Dropdown Button */}
         <TouchableOpacity
           style={styles.dropdownButton}
           onPress={() => setShowTermModal(true)}
@@ -178,7 +177,6 @@ const AcademicScreen: React.FC = () => {
           </View>
         </Modal>
 
-        {/* Class List */}
         <ScrollView
           style={styles.classesContainer}
           contentContainerStyle={styles.classesContentContainer}
@@ -197,7 +195,7 @@ const AcademicScreen: React.FC = () => {
                   </Text>
                 </View>
                 <Text style={styles.grade}>
-                  {course.grade ? course.grade : "N/A"}
+                  {course.grade || "N/A"}
                 </Text>
               </TouchableOpacity>
             ))
@@ -208,7 +206,6 @@ const AcademicScreen: React.FC = () => {
           )}
         </ScrollView>
 
-        {/* Button to Navigate to Advisors Screen */}
         <TouchableOpacity
           style={styles.advisorsButton}
           onPress={() => router.push("/advisors")}
@@ -220,7 +217,6 @@ const AcademicScreen: React.FC = () => {
   );
 };
 
-// Updated Styles
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
@@ -286,7 +282,7 @@ const styles = StyleSheet.create({
     flexGrow: 0,
   },
   classesContentContainer: {
-    paddingBottom: 120, // Increased from 80 to 120 to account for button and tab bar height
+    paddingBottom: 120,
   },
   classCard: {
     flexDirection: "row",
@@ -371,7 +367,7 @@ const styles = StyleSheet.create({
     width: "95%",
     alignItems: "center",
     position: "absolute",
-    bottom: 60, 
+    bottom: 60,
     left: "5%",
     zIndex: 10,
   },
@@ -396,18 +392,11 @@ const styles = StyleSheet.create({
     color: "#555",
     marginBottom: 15,
   },
-  backButton: {
-    backgroundColor: "#007AFF",
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 12,
-    alignSelf: "center",
-    marginTop: 20,
-  },
-  backButtonText: {
-    fontSize: 18,
-    fontWeight: "500",
-    color: "#FFFFFF",
+  backIconContainer: {
+    position: "absolute",
+    top: 20,
+    left: 15,
+    zIndex: 10,
   },
 });
 
