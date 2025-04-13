@@ -34,8 +34,8 @@ const LoginScreen: React.FC = () => {
             }
           );
           if (response.ok) {
-            // Token is valid, navigate to home
-            router.replace("/(tabs)/home");
+            // Token is valid, navigate to personal tab
+            router.replace("/(tabs)/personal");
           } else {
             // Token is invalid, remove it
             await AsyncStorage.removeItem("authToken");

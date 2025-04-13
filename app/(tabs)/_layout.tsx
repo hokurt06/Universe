@@ -20,17 +20,18 @@ export default function TabLayout() {
         }),
       }}
     >
-      {/* Home Tab */}
+
+      {/* Personal Tab */}
       <Tabs.Screen
-        name="home"
+        name="personal"
         options={{
-          title: "Home",
+          title: "Personal",
           tabBarIcon: ({ focused }) => (
             <Image
               source={require("../../assets/images/home.png")}
               style={{
-                width: 27,
-                height: 27,
+                width: 30,
+                height: 30,
                 tintColor: focused ? activeColor : "gray",
               }}
             />
@@ -46,23 +47,6 @@ export default function TabLayout() {
           tabBarIcon: ({ focused }) => (
             <Image
               source={require("../../assets/images/academic.png")}
-              style={{
-                width: 30,
-                height: 30,
-                tintColor: focused ? activeColor : "gray",
-              }}
-            />
-          ),
-        }}
-      />
-
-      <Tabs.Screen
-        name="personal"
-        options={{
-          title: "Personal",
-          tabBarIcon: ({ focused }) => (
-            <Image
-              source={require("../../assets/images/home.png")}
               style={{
                 width: 30,
                 height: 30,

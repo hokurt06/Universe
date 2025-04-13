@@ -15,10 +15,7 @@ const PersonalScreen = () => {
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = React.useState(false);
 
-  
-
-  const handleLogout = () => {
-    const router = useRouter(); // Initialize router for navigation
+  const router = useRouter(); // Initialize router for navigation
   
     // Function to handle user logout
     const handleLogout = async () => {
@@ -26,16 +23,8 @@ const PersonalScreen = () => {
       router.replace("/"); // Redirect user to the login screen
     };
   
-    return (
-      <View style={styles.container}>
-        
-        
-      </View>
-    );
-  };
-  
-
   return (
+    
     <ScrollView style={styles.container}>
       <View style={styles.profileContainer}>
         <Image
