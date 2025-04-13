@@ -71,7 +71,7 @@ const LoginScreen: React.FC = () => {
 
       if (response.ok) {
         await AsyncStorage.setItem("authToken", data.token);
-        router.replace("/(tabs)/home");
+        router.replace("/(tabs)/personal");
       } else {
         Alert.alert("Login Failed", data.message || "Invalid credentials");
       }
