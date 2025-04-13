@@ -56,6 +56,23 @@ export default function TabLayout() {
         }}
       />
 
+      <Tabs.Screen
+        name="personal"
+        options={{
+          title: "Personal",
+          tabBarIcon: ({ focused }) => (
+            <Image
+              source={require("../../assets/images/home.png")}
+              style={{
+                width: 30,
+                height: 30,
+                tintColor: focused ? activeColor : "gray",
+              }}
+            />
+          ),
+        }}
+      />
+
       {/* Schedule Tab */}
       <Tabs.Screen
         name="schedule"
