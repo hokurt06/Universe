@@ -7,64 +7,75 @@ import {
   ScrollView,
   Switch,
   TouchableOpacity,
+  SafeAreaView,
 } from 'react-native';
-import AsyncStorage from "@react-native-async-storage/async-storage"; // Import AsyncStorage to handle local storage
-import { useRouter } from "expo-router"; // Import useRouter for navigation
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
+import * as Clipboard from 'expo-clipboard';
 
 const PersonalScreen = () => {
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = React.useState(false);
 
-  const router = useRouter(); // Initialize router for navigation
-  
-    // Function to handle user logout
-    const handleLogout = async () => {
-      await AsyncStorage.removeItem("authToken"); // Remove the authentication token from storage
-      router.replace("/"); // Redirect user to the login screen
-    };
-  
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem("authToken");
+    router.replace("/");
+  };
+
+  const handleCopyId = async () => {
+    await Clipboard.setStringAsync("123456789");
+  };
+
   return (
-    
-    <ScrollView style={styles.container}>
-      <View style={styles.profileContainer}>
-        <Image
-          source={require("../../assets/images/home.png")} // Replace with actual profile image
-          style={styles.profileImage}
-        />
-        <View>
-          <Text style={styles.name}>Jane Doe</Text>
-          <Text style={styles.university}>Harvard University</Text>
-          <Text style={styles.userId}>ID: 123456789</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView style={styles.container}>
+        <View style={styles.profileContainer}>
+          <Image
+            source={require("../../assets/images/home.png")}
+            style={styles.profileImage}
+          />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.name}>Jane Doe</Text>
+            <Text style={styles.university}>Harvard University</Text>
+            <View style={styles.idRow}>
+              <Text style={styles.userId}>ID: 123456789</Text>
+              <TouchableOpacity onPress={handleCopyId}>
+                <Text style={styles.copyButton}>Copy</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-      </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Preferences</Text>
-        <SettingToggle
-          title="Enable Notifications"
-          value={notificationsEnabled}
-          onValueChange={setNotificationsEnabled}
-        />
-        <SettingToggle
-          title="Dark Mode"
-          value={darkModeEnabled}
-          onValueChange={setDarkModeEnabled}
-        />
-      </View>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Preferences</Text>
+          <SettingToggle
+            title="Enable Notifications"
+            value={notificationsEnabled}
+            onValueChange={setNotificationsEnabled}
+          />
+          <SettingToggle
+            title="Dark Mode"
+            value={darkModeEnabled}
+            onValueChange={setDarkModeEnabled}
+          />
+        </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Account</Text>
-        <SettingItem title="Edit Profile" />
-        <SettingItem title="Change Password" />
-        <SettingItem title="Privacy Settings" />
-      </View>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Account</Text>
+          <SettingItem title="Edit Profile" />
+          <SettingItem title="Change Password" />
+          <SettingItem title="Privacy Settings" />
+        </View>
 
-      <View style={styles.section}>
-        <TouchableOpacity onPress={handleLogout}>
-          <Text style={styles.logout}>Log Out</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+        <View style={styles.section}>
+          <TouchableOpacity onPress={handleLogout}>
+            <Text style={styles.logout}>Log Out</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
@@ -90,9 +101,11 @@ const SettingItem = ({ title }: { title: string }) => (
 );
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: '#F2F2F7',
+  },
+  container: {
     padding: 16,
   },
   profileContainer: {
@@ -119,10 +132,20 @@ const styles = StyleSheet.create({
     color: '#555',
     marginTop: 2,
   },
+  idRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
   userId: {
     fontSize: 14,
     color: '#888',
-    marginTop: 1,
+  },
+  copyButton: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: '500',
   },
   section: {
     backgroundColor: '#fff',
