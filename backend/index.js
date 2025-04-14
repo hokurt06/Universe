@@ -304,11 +304,35 @@ const router = express.Router();
 // ----- User Registration & Login -----
 router.post(
   "/register",
-  requireFields(["username", "password", "first_name", "last_name", "email"]),
+  requireFields([
+    "username",
+    "password",
+    "first_name",
+    "last_name",
+    "email",
+    "universityId",
+  ]),
   async (req, res) => {
-    const { username, password, first_name, last_name, email, role } = req.body;
+    const {
+      username,
+      password,
+      first_name,
+      last_name,
+      email,
+      role,
+      universityId,
+    } = req.body;
     try {
+      // Look up the university based on the provided universityId.
+      const universityDoc = await University.findOne({ id: universityId });
+      if (!universityDoc) {
+        return res
+          .status(400)
+          .json({ message: "Invalid university id provided." });
+      }
+
       const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
+      // Create the new user including the university reference.
       const user = new User({
         username,
         password_hash,
@@ -316,7 +340,9 @@ router.post(
         last_name,
         email,
         role: role || "student",
+        university: universityDoc._id, // assign the ObjectId reference from the University document
       });
+
       await user.save();
       res.status(201).json({
         message: "User registered successfully",

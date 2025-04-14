@@ -12,7 +12,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const CourseSchedule: React.FC = () => {
   const [viewMode, setViewMode] = useState<"schedule" | "exams">("schedule");
-  const [selectedClass, setSelectedClass] = useState<number | null>(null);
+  const [selectedEnrollment, setSelectedEnrollment] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
   const [selectedTerm, setSelectedTerm] = useState<string>("");
   const [terms, setTerms] = useState<{ key: string; label: string }[]>([]);
@@ -57,7 +57,7 @@ const CourseSchedule: React.FC = () => {
     };
 
     fetchTerms();
-  }, []);
+  }, [selectedTerm]);
 
   // Fetch user's enrollments (schedule data) from the API
   useEffect(() => {
@@ -87,46 +87,27 @@ const CourseSchedule: React.FC = () => {
     fetchEnrollments();
   }, []);
 
+  // Filter enrollments for the selected term.
   const coursesForTerm = courses.filter(
-    (course) => course.quarter === selectedTerm
+    (enrollment) => enrollment.quarter === selectedTerm
   );
 
-  const openModal = (enrollmentId: number) => {
-    setSelectedClass(enrollmentId);
+  // Open the modal by passing the entire enrollment object
+  const openModal = (enrollment: any) => {
+    setSelectedEnrollment(enrollment);
     setShowModal(true);
   };
 
   const closeModal = () => {
     setShowModal(false);
-    setSelectedClass(null);
+    setSelectedEnrollment(null);
   };
 
-  const selectedCourse = coursesForTerm.find(
-    (course) => course.enrollment_id === selectedClass
-  );
-
-  const sampleExams = [
-    {
-      id: 1,
-      subject: "Calculus I (MATH 101)",
-      midterm: "March 15, 2025, 10:00 AM - 12:00 PM",
-      final: "April 25, 2025, 2:00 PM - 4:00 PM",
-    },
-    {
-      id: 2,
-      subject: "Introduction to Physics (PHYS 101)",
-      midterm: "March 17, 2025, 1:00 PM - 3:00 PM",
-      final: "April 27, 2025, 9:00 AM - 11:00 AM",
-    },
-    {
-      id: 3,
-      subject: "Computer Science Fundamentals (CS 101)",
-      midterm: "March 20, 2025, 11:00 AM - 1:00 PM",
-      final: "April 28, 2025, 3:00 PM - 5:00 PM",
-    },
-  ];
-
-  const renderDropdownItem = ({ item }: { item: { key: string; label: string } }) => (
+  const renderDropdownItem = ({
+    item,
+  }: {
+    item: { key: string; label: string };
+  }) => (
     <TouchableOpacity
       style={styles.dropdownItem}
       onPress={() => {
@@ -178,23 +159,21 @@ const CourseSchedule: React.FC = () => {
               showsVerticalScrollIndicator={false}
             >
               {coursesForTerm.length > 0 ? (
-                coursesForTerm.map((course) => (
+                coursesForTerm.map((enrollment, index) => (
                   <TouchableOpacity
-                    key={course.enrollment_id}
+                    key={`${enrollment.enrolled_at}-${index}`}
                     style={styles.classCard}
-                    onPress={() => openModal(course.enrollment_id)}
+                    onPress={() => openModal(enrollment)}
                   >
                     <Text style={styles.classText}>
-                      {course.title} ({course.course_code})
+                      {enrollment.course.title} ({enrollment.course.course_code}
+                      )
                     </Text>
                     <Text style={styles.timeText}>
-                      Section: {course.section_identifier}
+                      Section: {enrollment.section}
                     </Text>
                     <Text style={styles.timeText}>
-                      Time: {course.meeting_time}
-                    </Text>
-                    <Text style={styles.locationText}>
-                      Location: {course.location_address}
+                      Time: {enrollment.meeting_time}
                     </Text>
                   </TouchableOpacity>
                 ))
@@ -212,7 +191,26 @@ const CourseSchedule: React.FC = () => {
               style={styles.examsContainer}
               showsVerticalScrollIndicator={false}
             >
-              {sampleExams.map((exam) => (
+              {[
+                {
+                  id: 1,
+                  subject: "Calculus I (MATH 101)",
+                  midterm: "March 15, 2025, 10:00 AM - 12:00 PM",
+                  final: "April 25, 2025, 2:00 PM - 4:00 PM",
+                },
+                {
+                  id: 2,
+                  subject: "Introduction to Physics (PHYS 101)",
+                  midterm: "March 17, 2025, 1:00 PM - 3:00 PM",
+                  final: "April 27, 2025, 9:00 AM - 11:00 AM",
+                },
+                {
+                  id: 3,
+                  subject: "Computer Science Fundamentals (CS 101)",
+                  midterm: "March 20, 2025, 11:00 AM - 1:00 PM",
+                  final: "April 28, 2025, 3:00 PM - 5:00 PM",
+                },
+              ].map((exam) => (
                 <View key={exam.id} style={styles.examCard}>
                   <Text style={styles.examCourseText}>{exam.subject}</Text>
                   <Text style={styles.examText}>Midterm: {exam.midterm}</Text>
@@ -225,7 +223,7 @@ const CourseSchedule: React.FC = () => {
       )}
 
       {/* Modal for Class Details */}
-      {showModal && selectedCourse && (
+      {showModal && selectedEnrollment && (
         <Modal transparent animationType="fade" visible={showModal}>
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
@@ -233,35 +231,26 @@ const CourseSchedule: React.FC = () => {
               <Text style={styles.modalText}>
                 Course:{" "}
                 <Text style={styles.boldText}>
-                  {selectedCourse.title} ({selectedCourse.course_code})
+                  {selectedEnrollment.course.title} (
+                  {selectedEnrollment.course.course_code})
                 </Text>
               </Text>
               <Text style={styles.modalText}>
                 Section:{" "}
                 <Text style={styles.boldText}>
-                  {selectedCourse.section_identifier}{" "}
-                  {selectedCourse.class_type
-                    ? `(${selectedCourse.class_type})`
-                    : ""}
+                  {selectedEnrollment.section}
                 </Text>
               </Text>
               <Text style={styles.modalText}>
                 Meeting Time:{" "}
                 <Text style={styles.boldText}>
-                  {selectedCourse.meeting_time}
-                </Text>
-              </Text>
-              <Text style={styles.modalText}>
-                Location:{" "}
-                <Text style={styles.boldText}>
-                  {selectedCourse.location_address}
+                  {selectedEnrollment.meeting_time}
                 </Text>
               </Text>
               <Text style={styles.modalText}>
                 Professor:{" "}
                 <Text style={styles.boldText}>
-                  {selectedCourse.section_professor ||
-                    selectedCourse.offering_professor}
+                  {selectedEnrollment.professor}
                 </Text>
               </Text>
               <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
@@ -343,11 +332,6 @@ const styles = StyleSheet.create({
   timeText: {
     fontSize: 14,
     color: "#555",
-    marginTop: 5,
-  },
-  locationText: {
-    fontSize: 14,
-    color: "#888",
     marginTop: 5,
   },
   noCoursesText: {
