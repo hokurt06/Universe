@@ -82,8 +82,9 @@ const AcademicScreen: React.FC = () => {
     fetchCourses();
   }, []);
 
+  // Filter enrollments for the selected term.
   const coursesForTerm = courses.filter(
-    (course) => course.quarter === selectedTerm
+    (enrollment) => enrollment.quarter === selectedTerm
   );
 
   const openCourse = (course: any) => {
@@ -111,11 +112,24 @@ const AcademicScreen: React.FC = () => {
           <ScrollView style={styles.courseDetailContainer}>
             <Text style={styles.detailText}>
               <Text style={styles.boldText}>Course: </Text>
-              {selectedCourse.title} ({selectedCourse.course_code})
+              {selectedCourse.course.title} ({selectedCourse.course.course_code}
+              )
             </Text>
             <Text style={styles.detailText}>
               <Text style={styles.boldText}>Quarter: </Text>
               {selectedCourse.quarter}
+            </Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.boldText}>Section: </Text>
+              {selectedCourse.section}
+            </Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.boldText}>Professor: </Text>
+              {selectedCourse.professor}
+            </Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.boldText}>Meeting Time: </Text>
+              {selectedCourse.meeting_time}
             </Text>
             <Text style={styles.detailText}>
               <Text style={styles.boldText}>Grade: </Text>
@@ -183,20 +197,18 @@ const AcademicScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
         >
           {coursesForTerm.length > 0 ? (
-            coursesForTerm.map((course) => (
+            coursesForTerm.map((enrollment, index) => (
               <TouchableOpacity
-                key={course.enrollment_id}
+                key={`${enrollment.enrolled_at}-${index}`}
                 style={styles.classCard}
-                onPress={() => openCourse(course)}
+                onPress={() => openCourse(enrollment)}
               >
                 <View>
                   <Text style={styles.classText}>
-                    {course.title} ({course.course_code})
+                    {enrollment.course.title} ({enrollment.course.course_code})
                   </Text>
                 </View>
-                <Text style={styles.grade}>
-                  {course.grade || "N/A"}
-                </Text>
+                <Text style={styles.grade}>{enrollment.grade || "N/A"}</Text>
               </TouchableOpacity>
             ))
           ) : (
