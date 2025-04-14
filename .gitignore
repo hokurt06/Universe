@@ -1,6 +1,8 @@
 
 .DS_Store
+android/*
 android/
+ios
 ios/
 
 # The rest of the entries were copied from https://github.com/github/gitignore/blob/main/Node.gitignore
