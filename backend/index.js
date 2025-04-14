@@ -7,6 +7,8 @@ const bcrypt = require("bcrypt");
 const cors = require("cors");
 const fs = require("fs");
 const https = require("https");
+const path = require("path");
+const axios = require("axios");
 
 const app = express();
 app.use(express.json());
@@ -79,7 +81,6 @@ mongoose
 // -------------------------------------------------
 
 // An enrollment (or “class”) now lives inside a user.
-// User Schema including embedded enrollments/advisors and reference to University
 const enrollmentSchema = new mongoose.Schema(
   {
     course: {
@@ -161,7 +162,6 @@ async function getUser(userId) {
 }
 
 // Add an enrollment (class) to a user.
-// `enrollmentData` should include a `course` object (with course_code, title, etc.) plus additional fields.
 async function addEnrollmentToUser(userId, enrollmentData) {
   return await User.findByIdAndUpdate(
     userId,
@@ -197,6 +197,69 @@ async function getAllCourses() {
 async function addCourse(courseData) {
   const course = new Course(courseData);
   return await course.save();
+}
+
+// -------------------------------------------------
+// Helper Functions for Fetching & Caching Events
+// -------------------------------------------------
+
+// Format today's date as mm/dd/yyyy.
+function getFormattedDate(date = new Date()) {
+  return `${(date.getMonth() + 1).toString().padStart(2, "0")}/${date
+    .getDate()
+    .toString()
+    .padStart(2, "0")}/${date.getFullYear()}`;
+}
+
+// Check if the file exists and is fresh (modified today).
+function isFileFresh(filePath) {
+  if (!fs.existsSync(filePath)) return false;
+
+  const stats = fs.statSync(filePath);
+  const modifiedDate = new Date(stats.mtime);
+  const now = new Date();
+
+  return (
+    modifiedDate.getFullYear() === now.getFullYear() &&
+    modifiedDate.getMonth() === now.getMonth() &&
+    modifiedDate.getDate() === now.getDate()
+  );
+}
+
+// Fetch events from the remote API and cache them.
+async function fetchAndCacheEvents() {
+  const formattedDate = getFormattedDate();
+  try {
+    const response = await axios.get(
+      "https://d1m.drexel.edu/api/v2.0/Calendar/Events/Upcoming/7",
+      {
+        params: {
+          today: formattedDate,
+          maxevents: 100,
+          requireImages: false,
+        },
+        headers: {
+          Host: "d1m.drexel.edu",
+          Accept: "*/*",
+          Connection: "keep-alive",
+          "User-Agent": "UniVerse D1 Scraper",
+          "Accept-Language": "en-US;q=1",
+          "Accept-Encoding": "gzip, deflate, br",
+        },
+        httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+      }
+    );
+    const eventsDir = path.join(__dirname, "scape");
+    if (!fs.existsSync(eventsDir)) {
+      fs.mkdirSync(eventsDir, { recursive: true });
+    }
+    const filePath = path.join(eventsDir, "events.json");
+    fs.writeFileSync(filePath, JSON.stringify(response.data, null, 2), "utf8");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching events:", error.message);
+    throw error;
+  }
 }
 
 // -------------------------------------------------
@@ -239,7 +302,6 @@ function authenticateToken(req, res, next) {
 const router = express.Router();
 
 // ----- User Registration & Login -----
-
 router.post(
   "/register",
   requireFields(["username", "password", "first_name", "last_name", "email"]),
@@ -304,14 +366,12 @@ router.get("/profile", authenticateToken, async (req, res) => {
 });
 
 // ----- Courses Endpoints (Catalog) -----
-
 router.post(
   "/courses",
   requireFields(["course_code", "title", "credits", "college"]),
   async (req, res) => {
     try {
       const { course_code, title, credits, description, college } = req.body;
-      // addCourse encapsulates the logic
       const course = await addCourse({
         course_code,
         title,
@@ -345,14 +405,12 @@ router.get("/courses", async (req, res) => {
 });
 
 // ----- Enrollment Endpoints (Embedded in User) -----
-// Add an enrollment (class) to the authenticated user.
 router.post(
   "/enrollments",
   authenticateToken,
   requireFields(["course_code", "quarter", "section", "professor"]),
   async (req, res) => {
     try {
-      // Pull the provided enrollment info.
       const {
         course_code,
         quarter,
@@ -362,12 +420,10 @@ router.post(
         class_type,
         grade,
       } = req.body;
-      // Look up the course from the catalog.
       const course = await Course.findOne({ course_code });
       if (!course)
         return res.status(404).json({ message: "Course not found in catalog" });
 
-      // Compose the enrollment object.
       const enrollmentData = {
         course: {
           course_code: course.course_code,
@@ -384,7 +440,6 @@ router.post(
         grade: grade || null,
       };
 
-      // Use helper function to add enrollment to user.
       const updatedUser = await addEnrollmentToUser(
         req.user.id,
         enrollmentData
@@ -402,7 +457,6 @@ router.post(
   }
 );
 
-// Get enrollments for the authenticated user.
 router.get("/enrollments", authenticateToken, async (req, res) => {
   try {
     const user = await getUser(req.user.id);
@@ -417,7 +471,6 @@ router.get("/enrollments", authenticateToken, async (req, res) => {
 });
 
 // ----- Advisor Endpoints (Embedded in User) -----
-// Add an advisor to the authenticated user.
 router.post(
   "/advisors",
   authenticateToken,
@@ -451,12 +504,10 @@ router.post(
 
 router.get("/terms", authenticateToken, async (req, res) => {
   try {
-    // Retrieve the user along with embedded enrollments.
     const user = await User.findById(req.user.id).lean();
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    // Build a set of unique terms (quarters) from the enrollments.
     const termsSet = new Set(
       user.enrollments.map((enrollment) => enrollment.quarter)
     );
@@ -471,7 +522,6 @@ router.get("/terms", authenticateToken, async (req, res) => {
   }
 });
 
-// Get advisors for the authenticated user.
 router.get("/advisors", authenticateToken, async (req, res) => {
   try {
     const user = await getUser(req.user.id);
@@ -487,11 +537,9 @@ router.get("/advisors", authenticateToken, async (req, res) => {
 
 router.post("/sample_data", authenticateToken, async (req, res) => {
   const userId = req.user.id;
-  // Get the number of courses to enroll from the request body; default to 3 if not provided.
   const count = req.body.count || 3;
 
   try {
-    // Pick n random courses from the catalog.
     const courses = await Course.aggregate([{ $sample: { size: count } }]);
 
     if (courses.length === 0) {
@@ -500,7 +548,6 @@ router.post("/sample_data", authenticateToken, async (req, res) => {
         .json({ message: "No courses found in the catalog" });
     }
 
-    // Add a sample advisor for demonstration purposes.
     const advisorData = {
       title: "Academic Advisor",
       name: "Dr. John Doe",
@@ -510,19 +557,14 @@ router.post("/sample_data", authenticateToken, async (req, res) => {
     };
     await addAdvisorToUser(userId, advisorData);
 
-    // Helper function to convert a credits value to a number.
     function parseCredits(credits) {
-      // If it's already a number, just return it.
       if (typeof credits === "number") return credits;
-
       if (typeof credits === "string") {
-        // Check if the string contains a hyphen (e.g., "0.0-12.0")
         if (credits.includes("-")) {
           const parts = credits
             .split("-")
             .map((part) => parseFloat(part.trim()));
           if (parts.every((num) => !isNaN(num))) {
-            // Return the average of the two numbers.
             return parts.reduce((a, b) => a + b, 0) / parts.length;
           }
         } else {
@@ -530,11 +572,9 @@ router.post("/sample_data", authenticateToken, async (req, res) => {
           if (!isNaN(num)) return num;
         }
       }
-      // Fallback value if parsing fails.
       return 0;
     }
 
-    // A helper function to map course properties.
     function mapCourse(course) {
       return {
         course_code: course["Course Code"] || course.course_code,
@@ -545,16 +585,14 @@ router.post("/sample_data", authenticateToken, async (req, res) => {
       };
     }
 
-    // For each randomly selected course, add an enrollment.
     for (const course of courses) {
-      // Generate a random grade between 50 and 100.
       const randomGrade = (Math.floor(Math.random() * 51) + 50).toString();
 
       const enrollmentData = {
         course: mapCourse(course),
-        quarter: "Fall 2024", // Customize or randomize as needed.
-        section: "A", // Default section value.
-        professor: "Prof. Random", // Default professor value.
+        quarter: "Fall 2024",
+        section: "A",
+        professor: "Prof. Random",
         meeting_time: "MWF 9:00-10:00",
         class_type: "Lecture",
         grade: randomGrade,
@@ -575,6 +613,27 @@ router.post("/sample_data", authenticateToken, async (req, res) => {
   }
 });
 
+// ----- Events Endpoint -----
+// This route serves events from a cached JSON file at ./scape/events.json.
+// It downloads fresh events from the external API if the cached file is missing or outdated.
+router.get("/events", async (req, res) => {
+  const eventsFilePath = path.join(__dirname, "scape", "events.json");
+  try {
+    let eventsData;
+    if (isFileFresh(eventsFilePath)) {
+      eventsData = JSON.parse(fs.readFileSync(eventsFilePath, "utf8"));
+    } else {
+      eventsData = await fetchAndCacheEvents();
+    }
+    res.json(eventsData);
+  } catch (error) {
+    console.error("Error in /events route:", error.message);
+    res
+      .status(500)
+      .json({ message: "Failed to retrieve events.", error: error.message });
+  }
+});
+
 // -------------------------------------------------
 // Mount the API Router with a Prefix & Start Server
 // -------------------------------------------------
@@ -591,18 +650,13 @@ app.use((err, req, res, next) => {
   res.status(status).json({ error: message });
 });
 
-// app.listen(PORT, () => {
-//   console.log(
-//     `Server is running on port ${PORT} in ${config.environment} mode.`
-//   );
-//   console.log(`API endpoints are prefixed with "${config.apiPrefix}"`);
-// });
+// Uncomment the line below to use HTTP instead of HTTPS (or when testing locally)
+// app.listen(PORT, () => console.log(`Server is running on port ${PORT}.`));
 
 https.createServer(sslOptions, app).listen(PORT, "0.0.0.0", () => {
   console.log(
     `Server is running on port ${PORT} in ${config.environment} mode (HTTPS).`
   );
   console.log(`API endpoints are prefixed with "${API_PREFIX}"`);
-  // import courses
-  // importCoursesFromCSV("./courses.csv");
+  // import courses from CSV if needed here
 });
