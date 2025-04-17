@@ -10,23 +10,38 @@ import {
   SafeAreaView,
   ActivityIndicator,
 } from "react-native";
+
+// AsyncStorage for storing/retrieving auth tokens
 import AsyncStorage from "@react-native-async-storage/async-storage";
+
+// Navigation hook from Expo Router
 import { useRouter } from "expo-router";
+
+// Clipboard for copying text to clipboard
 import * as Clipboard from "expo-clipboard";
 
 const PersonalScreen = () => {
+  // State to store user profile data
   const [user, setUser] = React.useState<any>(null);
+
+  // State for enabling/disabling notifications
   const [notificationsEnabled, setNotificationsEnabled] =
     React.useState<boolean>(true);
+
+  // State for toggling dark mode
   const [darkModeEnabled, setDarkModeEnabled] = React.useState<boolean>(false);
 
   const router = useRouter();
 
+  // Fetch user profile on component mount
   React.useEffect(() => {
     const fetchProfile = async () => {
       try {
+        // Get the stored authentication token
         const token = await AsyncStorage.getItem("authToken");
+
         if (token) {
+          // Fetch user profile using token for authentication
           const response = await fetch(
             "https://universe.terabytecomputing.com:3000/api/v1/profile",
             {
@@ -36,9 +51,11 @@ const PersonalScreen = () => {
               },
             }
           );
+
           const data = await response.json();
           console.log("Profile API response:", data);
-          console.log;
+
+          // Save user data to state
           if (data) {
             setUser(data);
           }
@@ -47,21 +64,24 @@ const PersonalScreen = () => {
         console.error("Error fetching profile:", error);
       }
     };
+
     fetchProfile();
   }, []);
 
+  // Handle logout by clearing the token and navigating to the login screen
   const handleLogout = async () => {
     await AsyncStorage.removeItem("authToken");
     router.replace("/");
   };
 
+  // Copy user ID to clipboard
   const handleCopyId = async () => {
     if (user && user._id) {
       await Clipboard.setStringAsync(user._id);
     }
   };
 
-  // While waiting for the profile to load, you can show a loading indicator.
+  // Show loading indicator while profile is being fetched
   if (!user) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -73,9 +93,11 @@ const PersonalScreen = () => {
     );
   }
 
+  // Main UI rendering when user data is available
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container}>
+        {/* User profile info */}
         <View style={styles.profileContainer}>
           <Image
             source={require("../../assets/images/home.png")}
@@ -99,6 +121,7 @@ const PersonalScreen = () => {
           </View>
         </View>
 
+        {/* Preferences section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Preferences</Text>
           <SettingToggle
@@ -113,6 +136,7 @@ const PersonalScreen = () => {
           />
         </View>
 
+        {/* Account settings */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account</Text>
           <SettingItem title="Edit Profile" />
@@ -120,6 +144,7 @@ const PersonalScreen = () => {
           <SettingItem title="Privacy Settings" />
         </View>
 
+        {/* Logout button */}
         <View style={styles.section}>
           <TouchableOpacity onPress={handleLogout}>
             <Text style={styles.logout}>Log Out</Text>
@@ -130,6 +155,7 @@ const PersonalScreen = () => {
   );
 };
 
+// Reusable toggle component for settings
 const SettingToggle = ({
   title,
   value,
@@ -145,12 +171,14 @@ const SettingToggle = ({
   </View>
 );
 
+// Reusable setting item (button-style)
 const SettingItem = ({ title }: { title: string }) => (
   <TouchableOpacity style={styles.settingRow}>
     <Text style={styles.settingText}>{title}</Text>
   </TouchableOpacity>
 );
 
+// Styles for the screen and components
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
