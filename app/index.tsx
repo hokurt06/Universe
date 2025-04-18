@@ -117,12 +117,13 @@ const LoginScreen: React.FC = () => {
         <Text style={styles.linkText}>Forgot Password?</Text>
       </TouchableOpacity>
       <View style={styles.bottomContainer}>
-        <TouchableOpacity>
-          <Text style={styles.signUpText}>
-            Don't have an account?{" "}
-            <Text style={styles.signUpLink}>Sign up</Text>
-          </Text>
-        </TouchableOpacity>
+      <TouchableOpacity onPress={() => router.push("/sign_up")}>
+        <Text style={styles.signUpText}>
+         Don't have an account?{" "}
+         <Text style={styles.signUpLink}>Sign up</Text>
+        </Text>
+      </TouchableOpacity>
+
       </View>
     </View>
   );
