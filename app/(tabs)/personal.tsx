@@ -112,7 +112,7 @@ const PersonalScreen = () => {
                 ? user.university.name
                 : "University Not Set"}
             </Text>
-            <View style={styles.idRow}>
+            <View   style={styles.idRow}>
               <Text style={styles.userId}>ID: {user._id}</Text>
               <TouchableOpacity onPress={handleCopyId}>
                 <Text style={styles.copyButton}>Copy</Text>
@@ -142,8 +142,8 @@ const PersonalScreen = () => {
           <SettingItem title="Edit Profile" />
           <SettingItem title="Change Password" />
           <SettingItem title="Privacy Settings" />
+          <SettingItem title="Maps" onPress={() => router.push("/maps")} />         
         </View>
-
         {/* Logout button */}
         <View style={styles.section}>
           <TouchableOpacity onPress={handleLogout}>
@@ -172,11 +172,18 @@ const SettingToggle = ({
 );
 
 // Reusable setting item (button-style)
-const SettingItem = ({ title }: { title: string }) => (
-  <TouchableOpacity style={styles.settingRow}>
+const SettingItem = ({
+  title,
+  onPress,
+}: {
+  title: string;
+  onPress?: () => void;
+}) => (
+  <TouchableOpacity style={styles.settingRow} onPress={onPress}>
     <Text style={styles.settingText}>{title}</Text>
   </TouchableOpacity>
 );
+
 
 // Styles for the screen and components
 const styles = StyleSheet.create({

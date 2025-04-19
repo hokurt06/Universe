@@ -10,13 +10,22 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "universe.app.ios"
+      "bundleIdentifier": "universe.app.ios",
+      "config": {
+        "googleMapsApiKey": "AIzaSyDU4qb4SfHqlwr-1sb24lAyF7KN4UJG4CE"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyB44mou6Ke6WguyJ8SGFL3YMDipySRuacU"
+        }
+      },
+      "package": "universe.app.ios"
     },
     "web": {
       "bundler": "metro",

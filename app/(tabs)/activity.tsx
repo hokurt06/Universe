@@ -35,7 +35,7 @@ const THEME = {
 };
 
 // Parse a raw date string (assumes numeric timestamp in a string) to a short date.
-const parseDate = (raw) => {
+const parseDate = (raw:any) => {
   const timestamp = parseInt(raw.match(/\d+/)?.[0] || "0", 10);
   return new Date(timestamp).toLocaleDateString(undefined, {
     month: "short",
@@ -44,7 +44,7 @@ const parseDate = (raw) => {
 };
 
 // Parse time from a raw date string (assumes numeric timestamp in a string).
-const parseTime = (raw) => {
+const parseTime = (raw:any) => {
   const timestamp = parseInt(raw.match(/\d+/)?.[0] || "0", 10);
   return new Date(timestamp).toLocaleTimeString(undefined, {
     hour: "numeric",
@@ -53,13 +53,13 @@ const parseTime = (raw) => {
 };
 
 // Formats events data from the API based on the selected category.
-const formatEvents = (data, categoryId) => {
+const formatEvents = (data: any[], categoryId: string) => {
   const categoryTitle = CATEGORIES.find((c) => c.id === categoryId)?.title;
   if (!categoryTitle) return [];
 
   return data
     .filter((item) =>
-      item.Categories?.some((cat) =>
+      item.Categories?.some((cat: { CategoryName: string; SubCategoryName?: string }) =>
         cat.CategoryName.toLowerCase().includes(categoryTitle.toLowerCase())
       )
     )
@@ -70,7 +70,7 @@ const formatEvents = (data, categoryId) => {
       date: parseDate(item.Start),
       time: parseTime(item.Start),
       location: "TBD",
-      icon: "calendar-outline",
+      icon: "calendar-outline" as const,
       categoryId,
       categories: item.Categories,
     }));
@@ -79,13 +79,35 @@ const formatEvents = (data, categoryId) => {
 const ActivityScreen = () => {
   const [selectedCategoryId, setSelectedCategoryId] =
     React.useState("academic");
-  const [events, setEvents] = React.useState([]);
+  const [events, setEvents] = React.useState<
+    {
+      id: any;
+      name: string;
+      description: string;
+      date: string;
+      time: string;
+      location: string;
+      icon: "filter" | "infinite" | "text" | "school" | "ribbon" | "leaf" | "color-palette" | "briefcase" | "happy" | "key" | "push" | "map" | "at" | "search" | "repeat" | "link" | "calendar-outline";
+      categoryId: string;
+      categories: any[];
+    }[]
+  >([]);
   const [refreshing, setRefreshing] = React.useState(false);
   const [modalVisible, setModalVisible] = React.useState(false);
-  const [selectedEvent, setSelectedEvent] = React.useState(null);
+  const [selectedEvent, setSelectedEvent] = React.useState<{
+    id: any;
+    name: string;
+    description: string;
+    date: string;
+    time: string;
+    location: string;
+    icon: string;
+    categoryId: string;
+    categories: any[];
+  } | null>(null);
 
   // Fetch events data from the endpoint and filter/format it for the selected category.
-  const fetchEvents = async (categoryId) => {
+  const fetchEvents = async (categoryId: string) => {
     setRefreshing(true);
     try {
       const response = await fetch(
@@ -110,7 +132,7 @@ const ActivityScreen = () => {
   React.useEffect(() => {
     fetchEvents(selectedCategoryId);
   }, [selectedCategoryId]);
-
+ //header title
   const renderHeader = () => (
     <View style={styles.headerContainer}>
       <View style={styles.headerTop}>
@@ -148,7 +170,7 @@ const ActivityScreen = () => {
     </View>
   );
 
-  const renderItem = ({ item }) => (
+  const renderItem = ({ item }: { item: typeof events[number] }) => (
     <TouchableOpacity
       style={styles.eventCard}
       onPress={() => {
