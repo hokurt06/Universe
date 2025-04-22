@@ -65,7 +65,6 @@ const SignUpScreen = () => {
     setLoading(true); // Start loading indicator
 
     try {
-      // *** IMPORTANT: Adjust this URL to your actual registration endpoint ***
       const response = await fetch(
         "https://universe.terabytecomputing.com:3000/api/v1/register",
         {
@@ -77,8 +76,7 @@ const SignUpScreen = () => {
             username: fullName,
             password,
             email: "teett@df.com",
-            universityId: "edd750a7-1972-463d-a983-4fab60b2e9be", // Or whatever field name your backend expects (e.g., institution)
-            // Add email field if required by your backend
+            universityId: "edd750a7-1972-463d-a983-4fab60b2e9be",
           }),
         }
       );
