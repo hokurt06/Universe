@@ -676,9 +676,6 @@ app.use((err, req, res, next) => {
   res.status(status).json({ error: message });
 });
 
-// Uncomment the line below to use HTTP instead of HTTPS (or when testing locally)
-// app.listen(PORT, () => console.log(`Server is running on port ${PORT}.`));
-
 https.createServer(sslOptions, app).listen(PORT, "0.0.0.0", () => {
   console.log(
     `Server is running on port ${PORT} in ${config.environment} mode (HTTPS).`
