@@ -28,9 +28,8 @@ const SignUpScreen = () => {
   const [selectedUniversity, setSelectedUniversity] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [passwordVisible, setPasswordVisible] = useState(false); // State to toggle password visibility
+  const [passwordVisible, setPasswordVisible] = useState(false);
 
-  // Extract & alphabetize university names
   const parsedUniversityList: string[] = useMemo(() => {
     return (universityListRaw as University[])
       .map((uni) => uni.institution)
@@ -114,18 +113,11 @@ const SignUpScreen = () => {
             value={password}
             onChangeText={setPassword}
             secureTextEntry={!passwordVisible}
-            style={styles.input}
+            style={styles.passwordInput}
             editable={!loading}
           />
-          <TouchableOpacity
-            onPress={() => setPasswordVisible(!passwordVisible)}
-            style={styles.eyeIcon}
-          >
-            <Ionicons
-              name={passwordVisible ? "eye" : "eye-off"} // Show "eye" when password is hidden
-              size={24}
-              color="#000"
-            />
+          <TouchableOpacity onPress={() => setPasswordVisible(!passwordVisible)}>
+            <Ionicons name={passwordVisible ? "eye" : "eye-off"} size={24} color="#000" />
           </TouchableOpacity>
         </View>
 
@@ -140,9 +132,7 @@ const SignUpScreen = () => {
             setShowDropdown(true);
           }}
           onFocus={() => setShowDropdown(true)}
-          onBlur={() => {
-            setTimeout(() => setShowDropdown(false), 150);
-          }}
+          onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
           style={styles.input}
           editable={!loading}
         />
@@ -206,24 +196,30 @@ const styles = StyleSheet.create({
   },
   input: {
     width: "90%",
+    height: 50,
     borderColor: "#ccc",
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 15,
-    height: 50,
     marginBottom: 20,
     backgroundColor: "#fff",
     fontSize: 16,
   },
   passwordContainer: {
     width: "90%",
-    position: "relative",
+    height: 50,
+    flexDirection: "row",
+    alignItems: "center",
+    borderColor: "#ccc",
+    borderWidth: 1,
+    borderRadius: 8,
+    backgroundColor: "#fff",
+    marginBottom: 20,
+    paddingHorizontal: 15,
   },
-  eyeIcon: {
-    position: "absolute",
-    right: 10,
-    top: "38%",
-    transform: [{ translateY: -12 }],
+  passwordInput: {
+    flex: 1,
+    fontSize: 16,
   },
   dropdown: {
     width: "90%",
@@ -232,10 +228,7 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
     borderRadius: 8,
     backgroundColor: "#fff",
-    position: "absolute",
-    top: 510,
-    zIndex: 20,
-    left: "5%",
+    marginTop: 5,
   },
   dropdownItem: {
     paddingVertical: 12,
