@@ -17,37 +17,44 @@ const LoginScreen: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const router = useRouter();
 
-  // Check for an existing token on mount
-  useEffect(() => {
-    const checkToken = async () => {
-      const token = await AsyncStorage.getItem("authToken");
-      if (token) {
-        try {
-          const response = await fetch(
-            "https://universe.terabytecomputing.com:3000/api/v1/profile",
-            {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-          if (response.ok) {
-            // Token is valid, navigate to personal tab
-            router.replace("/(tabs)/personal");
-          } else {
-            // Token is invalid, remove it
-            await AsyncStorage.removeItem("authToken");
-          }
-        } catch (error) {
-          console.error("Error checking token:", error);
-        }
-      }
-    };
+  const TEST_MODE = false; // <== set to false when done testing
 
-    checkToken();
-  }, [router]);
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (TEST_MODE) {
+        router.replace("/(tabs)/personal");
+      } else {
+        const checkToken = async () => {
+          const token = await AsyncStorage.getItem("authToken");
+          if (token) {
+            try {
+              const response = await fetch(
+                "https://universe.terabytecomputing.com:3000/api/v1/profile",
+                {
+                  method: "GET",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                }
+              );
+              if (response.ok) {
+                router.replace("/(tabs)/personal");
+              } else {
+                await AsyncStorage.removeItem("authToken");
+              }
+            } catch (error) {
+              console.error("Error checking token:", error);
+            }
+          }
+        };
+
+        checkToken();
+      }
+    }, 50); // wait 50ms to avoid router error
+
+    return () => clearTimeout(timeout); // clear timeout if component unmounts
+  }, []);
 
   const handleSignIn = async () => {
     if (!email || !password) {
@@ -85,8 +92,7 @@ const LoginScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      
-      <Logo /> 
+      <Logo />
       <TextInput
         style={styles.input}
         placeholder="Email"
@@ -117,13 +123,12 @@ const LoginScreen: React.FC = () => {
         <Text style={styles.linkText}>Forgot Password?</Text>
       </TouchableOpacity>
       <View style={styles.bottomContainer}>
-      <TouchableOpacity onPress={() => router.push("/sign_up")}>
-        <Text style={styles.signUpText}>
-         Don't have an account?{" "}
-         <Text style={styles.signUpLink}>Sign up</Text>
-        </Text>
-      </TouchableOpacity>
-
+        <TouchableOpacity onPress={() => router.push("/sign_up")}>
+          <Text style={styles.signUpText}>
+            Don't have an account?{" "}
+            <Text style={styles.signUpLink}>Sign up</Text>
+          </Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -154,11 +159,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
   },
-  signInButtonText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
-  linkText: { color: "#007bff", fontSize: 16, marginTop: 10 },
-  bottomContainer: { position: "absolute", bottom: 30, alignItems: "center" },
-  signUpText: { fontSize: 16, color: "#333" },
-  signUpLink: { color: "#ffcc00", fontWeight: "bold" },
+  signInButtonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  linkText: {
+    color: "#007bff",
+    fontSize: 16,
+    marginTop: 10,
+  },
+  bottomContainer: {
+    position: "absolute",
+    bottom: 30,
+    alignItems: "center",
+  },
+  signUpText: {
+    fontSize: 16,
+    color: "#333",
+  },
+  signUpLink: {
+    color: "#ffcc00",
+    fontWeight: "bold",
+  },
 });
 
 export default LoginScreen;
