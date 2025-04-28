@@ -54,7 +54,7 @@ const AdvisorsScreen: React.FC = () => {
   };
 
   const handleBackToAcademics = () => {
-    router.back(); // Navigate back to the previous screen (AcademicScreen)
+    router.replace("/(tabs)/academic"); // Navigate back to the previous screen (AcademicScreen)
   };
 
   return (
