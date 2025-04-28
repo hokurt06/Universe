@@ -25,6 +25,8 @@ const LoginScreen: React.FC = () => {
   const fadeAnim = useState(new Animated.Value(0))[0];
   const slideAnim = useState(new Animated.Value(20))[0];
 
+  const TEST_MODE = false; // "True" for bypass.
+
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -40,6 +42,12 @@ const LoginScreen: React.FC = () => {
         useNativeDriver: true,
       }),
     ]).start();
+  }, []);
+
+  useEffect(() => {
+    if (TEST_MODE) {
+      router.replace("/(tabs)/personal"); // <<< BYPASS added here
+    }
   }, []);
 
   const handleSignIn = async () => {
