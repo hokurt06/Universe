@@ -10,6 +10,7 @@ import {
   Platform,
   KeyboardAvoidingView,
   SafeAreaView,
+  ActivityIndicator,
   Animated,
   Easing,
 } from "react-native";
@@ -19,15 +20,63 @@ import Logo from "../components/Logo";
 
 const LoginScreen: React.FC = () => {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const fadeAnim = useState(new Animated.Value(0))[0];
-  const slideAnim = useState(new Animated.Value(20))[0];
 
-  const TEST_MODE = false; // "True" for bypass.
+  // -------------------------------------------------
+  // Local state
+  // -------------------------------------------------
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false); // sign-in request
+  const [checkingToken, setCheckingToken] = useState(true); // splash on launch
 
+  // -------------------------------------------------
+  // Animation setup
+  // -------------------------------------------------
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const slideAnim = React.useRef(new Animated.Value(20)).current;
+
+  // -------------------------------------------------
+  // Validate any stored token on mount
+  // -------------------------------------------------
   useEffect(() => {
+    const checkToken = async () => {
+      try {
+        const token = await AsyncStorage.getItem("authToken");
+        if (!token) return;
+
+        const res = await fetch(
+          "https://universe.terabytecomputing.com:3000/api/v1/profile",
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (res.ok) {
+          router.replace("/(tabs)/personal");
+          return; // short-circuit – no UI needed
+        }
+
+        // Bad token → remove it
+        await AsyncStorage.removeItem("authToken");
+      } catch (err) {
+        console.error("Token validation error:", err);
+      } finally {
+        setCheckingToken(false); // move on to login UI
+      }
+    };
+
+    checkToken();
+  }, [router]);
+
+  // -------------------------------------------------
+  // Play entrance animation once splash finishes
+  // -------------------------------------------------
+  useEffect(() => {
+    if (checkingToken) return;
+
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -42,22 +91,20 @@ const LoginScreen: React.FC = () => {
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+  }, [checkingToken, fadeAnim, slideAnim]);
 
-  useEffect(() => {
-    if (TEST_MODE) {
-      router.replace("/(tabs)/personal"); // <<< BYPASS added here
-    }
-  }, []);
-
+  // -------------------------------------------------
+  // Sign-in handler
+  // -------------------------------------------------
   const handleSignIn = async () => {
     if (!email || !password) {
       Alert.alert("Sign In Failed", "Please enter both email and password.");
       return;
     }
+
     setLoading(true);
     try {
-      const response = await fetch(
+      const res = await fetch(
         "https://universe.terabytecomputing.com:3000/api/v1/login",
         {
           method: "POST",
@@ -65,21 +112,43 @@ const LoginScreen: React.FC = () => {
           body: JSON.stringify({ email, password }),
         }
       );
-      const data = await response.json();
-      if (response.ok) {
+      const data = await res.json();
+
+      if (res.ok) {
         await AsyncStorage.setItem("authToken", data.token);
         router.replace("/(tabs)/personal");
       } else {
-        Alert.alert("Sign In Failed", data.message || "Your email or password was incorrect. Please try again.");
+        Alert.alert(
+          "Sign In Failed",
+          data.message ||
+            "Your email or password was incorrect. Please try again."
+        );
       }
-    } catch (error) {
-      console.error(error);
-      Alert.alert("Connection Error", "We couldn't establish a connection. Please check your internet and try again.");
+    } catch (err) {
+      console.error("Sign-in error:", err);
+      Alert.alert(
+        "Connection Error",
+        "We couldn't establish a connection. Please check your internet and try again."
+      );
     } finally {
       setLoading(false);
     }
   };
 
+  // -------------------------------------------------
+  // Splash screen while validating token
+  // -------------------------------------------------
+  if (checkingToken) {
+    return (
+      <View style={styles.splashContainer}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  // -------------------------------------------------
+  // Main UI
+  // -------------------------------------------------
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
@@ -87,18 +156,20 @@ const LoginScreen: React.FC = () => {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoidingView}
       >
-        <Animated.View 
+        <Animated.View
           style={[
-            styles.contentContainer, 
-            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
+            styles.contentContainer,
+            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
           ]}
         >
           <View style={styles.logoContainer}>
             <Logo />
           </View>
-          
+
           <Text style={styles.welcomeText}>Sign in</Text>
-          <Text style={styles.subtitleText}>Enter your account details below</Text>
+          <Text style={styles.subtitleText}>
+            Enter your account details below
+          </Text>
 
           <View style={styles.formContainer}>
             <Text style={styles.inputLabel}>Email</Text>
@@ -131,19 +202,29 @@ const LoginScreen: React.FC = () => {
 
             <TouchableOpacity
               style={[
-                styles.signInButton, 
-                (email.length > 0 && password.length > 0) ? styles.signInButtonActive : styles.signInButtonInactive,
-                loading && styles.signInButtonLoading
+                styles.signInButton,
+                email && password
+                  ? styles.signInButtonActive
+                  : styles.signInButtonInactive,
+                loading && styles.signInButtonLoading,
               ]}
               onPress={handleSignIn}
               disabled={loading || !email || !password}
             >
-              <Text style={[
-                styles.signInButtonText, 
-                (email.length > 0 && password.length > 0) ? styles.signInButtonTextActive : styles.signInButtonTextInactive
-              ]}>
-                {loading ? "Signing In..." : "Sign In"}
-              </Text>
+              {loading ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : (
+                <Text
+                  style={[
+                    styles.signInButtonText,
+                    email && password
+                      ? styles.signInButtonTextActive
+                      : styles.signInButtonTextInactive,
+                  ]}
+                >
+                  Sign In
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -151,7 +232,8 @@ const LoginScreen: React.FC = () => {
         <View style={styles.bottomContainer}>
           <TouchableOpacity onPress={() => router.push("/sign_up")}>
             <Text style={styles.signUpText}>
-              Don't have an account? <Text style={styles.signUpLink}>Create yours now</Text>
+              Don't have an account?{" "}
+              <Text style={styles.signUpLink}>Create yours now</Text>
             </Text>
           </TouchableOpacity>
         </View>
@@ -160,9 +242,18 @@ const LoginScreen: React.FC = () => {
   );
 };
 
+// -------------------------------------------------
+// Styles
+// -------------------------------------------------
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+  splashContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: "#FFFFFF",
   },
   keyboardAvoidingView: {
