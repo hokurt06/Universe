@@ -11,18 +11,17 @@ import {
   Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+type Props = {
+  navigation: NativeStackNavigationProp<any>;
+};
 
 const BackIcon = () => (
   <View style={styles.backIcon}>
     <Text style={styles.backIconText}>{"←"}</Text>
   </View>
 );
-
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-
-type Props = {
-  navigation: NativeStackNavigationProp<any>;
-};
 
 const InboxScreen: React.FC<Props> = ({ navigation }) => {
   const [emails, setEmails] = useState<any[]>([]);
@@ -82,7 +81,7 @@ const InboxScreen: React.FC<Props> = ({ navigation }) => {
         useNativeDriver: true,
       }),
       Animated.timing(slideAnimation, {
-        toValue: 0, 
+        toValue: 0,
         duration: 250,
         useNativeDriver: true,
       })
@@ -107,7 +106,6 @@ const InboxScreen: React.FC<Props> = ({ navigation }) => {
               {item.sender.charAt(0)}
             </Text>
           </View>
-          
           <View style={styles.senderDetails}>
             <Text style={styles.senderText} numberOfLines={1}>
               {item.sender}
@@ -115,7 +113,6 @@ const InboxScreen: React.FC<Props> = ({ navigation }) => {
             <Text style={styles.timeText}>{item.timestamp}</Text>
           </View>
         </View>
-        
         <View style={styles.messagePreview}>
           <Text style={styles.subjectText} numberOfLines={1}>
             {item.subject}
@@ -149,11 +146,9 @@ const InboxScreen: React.FC<Props> = ({ navigation }) => {
     >
       <SafeAreaView style={styles.safeArea}>
         <StatusBar barStyle="dark-content" />
-        
         <View style={[styles.headerContainer, { paddingTop: insets.top > 0 ? 8 : 16 }]}>
           <Text style={styles.header}>Inbox</Text>
         </View>
-        
         <FlatList
           data={emails}
           renderItem={renderEmailItem}
@@ -199,7 +194,6 @@ const InboxScreen: React.FC<Props> = ({ navigation }) => {
                 <Text style={styles.detailSubject}>
                   {selectedEmail?.subject}
                 </Text>
-                
                 <View style={styles.detailMetaContainer}>
                   <View style={[
                     styles.detailAvatar,
@@ -209,7 +203,6 @@ const InboxScreen: React.FC<Props> = ({ navigation }) => {
                       {selectedEmail?.sender.charAt(0)}
                     </Text>
                   </View>
-                  
                   <View style={styles.detailSenderContainer}>
                     <Text style={styles.detailSenderName}>
                       {selectedEmail?.sender}
@@ -219,7 +212,6 @@ const InboxScreen: React.FC<Props> = ({ navigation }) => {
                     </Text>
                   </View>
                 </View>
-                
                 <View style={styles.messageBody}>
                   <Text style={styles.detailBody}>
                     {selectedEmail?.body}
@@ -247,46 +239,40 @@ const InboxScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#FFFFFF",
   },
   safeArea: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#FFFFFF",
   },
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#FFFFFF",
   },
   headerContainer: {
     paddingHorizontal: 20,
     paddingBottom: 16,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
+    borderBottomColor: "#E5E5EA",
   },
   header: {
     fontSize: 28,
-    fontWeight: "700",
-    color: "#1A1A1A",
+    fontWeight: "600",
+    color: "#1D1D1F",
   },
   emailsContent: {
     paddingVertical: 8,
-    backgroundColor: "#F5F5F5",
   },
   emailCard: {
-    backgroundColor: "#FFFFFF",
-    marginHorizontal: 10,
+    backgroundColor: "#F5F5F7",
+    marginHorizontal: 16,
     marginVertical: 10,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 1.5,
-    elevation: 1.5,
+    borderRadius: 10,
     overflow: "hidden",
   },
   emailCardContent: {
-    padding: 20,
+    padding: 16,
   },
   senderRow: {
     flexDirection: "row",
@@ -318,14 +304,14 @@ const styles = StyleSheet.create({
   },
   senderText: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#1A1A1A",
+    fontWeight: "500",
+    color: "#1D1D1F",
     flex: 1,
     paddingRight: 10,
   },
   timeText: {
     fontSize: 14,
-    color: "#6E7377",
+    color: "#86868B",
   },
   messagePreview: {
     paddingLeft: 52,
@@ -333,30 +319,28 @@ const styles = StyleSheet.create({
   subjectText: {
     fontSize: 15,
     fontWeight: "500",
-    color: "#1A1A1A",
+    color: "#1D1D1F",
     marginBottom: 4,
   },
   previewText: {
     fontSize: 14,
-    color: "#6E7377",
-    lineHeight: 20,
+    color: "#86868B",
   },
   separator: {
     height: 1,
-    backgroundColor: "#E0E0E0",
+    backgroundColor: "#E5E5EA",
     marginHorizontal: 16,
   },
   emptyState: {
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 60,
-    paddingHorizontal: 20,
   },
   emptyStateIcon: {
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: "#EEEEEE",
+    backgroundColor: "#F5F5F7",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
@@ -367,17 +351,17 @@ const styles = StyleSheet.create({
   noEmailsText: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#1A1A1A",
+    color: "#1D1D1F",
     marginBottom: 8,
   },
   noEmailsSubtext: {
     fontSize: 16,
-    color: "#6E7377",
+    color: "#86868B",
     textAlign: "center",
   },
   detailContainer: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#FFFFFF",
     zIndex: 2,
   },
   detailSafeArea: {
@@ -389,8 +373,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
-    backgroundColor: "#F5F5F5",
+    borderBottomColor: "#E5E5EA",
+    backgroundColor: "#FFFFFF",
   },
   backButton: {
     flexDirection: "row",
@@ -412,20 +396,15 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   emailDetailWrapper: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
+    backgroundColor: "#F5F5F7",
+    borderRadius: 10,
     margin: 16,
     padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 1.5,
-    elevation: 1.5,
   },
   detailSubject: {
     fontSize: 20,
-    fontWeight: "700",
-    color: "#1A1A1A",
+    fontWeight: "600",
+    color: "#1D1D1F",
     marginBottom: 16,
   },
   detailMetaContainer: {
@@ -452,23 +431,22 @@ const styles = StyleSheet.create({
   },
   detailSenderName: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#1A1A1A",
+    fontWeight: "500",
+    color: "#1D1D1F",
   },
   detailTimestamp: {
     fontSize: 14,
-    color: "#6E7377",
-    marginTop: 2,
+    color: "#86868B",
   },
   messageBody: {
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: "#E0E0E0",
+    borderTopColor: "#E5E5EA",
   },
   detailBody: {
     fontSize: 16,
     lineHeight: 22,
-    color: "#404040",
+    color: "#1D1D1F",
   },
 });
 
