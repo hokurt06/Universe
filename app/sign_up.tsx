@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -14,99 +14,237 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import universityListRaw from "./assets/Universities.json";
-
 interface University {
-  institution: string;
+  id: string;
+  name: string;
 }
 
 const SignUpScreen = () => {
   const router = useRouter();
-  const [fullName, setFullName] = useState("");
+  // ---------------------- form state ---------------------- //
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [search, setSearch] = useState("");
-  const [selectedUniversity, setSelectedUniversity] = useState<string | null>(null);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
 
-  const parsedUniversityList: string[] = useMemo(() => {
-    return (universityListRaw as University[])
-      .map((uni) => uni.institution)
-      .sort((a, b) => a.localeCompare(b));
+  // ------------------- university search ------------------ //
+  const [universities, setUniversities] = useState<University[]>([]);
+  const [search, setSearch] = useState("");
+  const [selectedUniversity, setSelectedUniversity] =
+    useState<University | null>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [uniLoading, setUniLoading] = useState(true);
+
+  // ---------------------- request state ------------------- //
+  const [loading, setLoading] = useState(false);
+
+  // =========================================================
+  // Fetch universities once when the component mounts.
+  // =========================================================
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const fetchUniversities = async () => {
+      try {
+        const res = await fetch(
+          "https://universe.terabytecomputing.com:3000/api/v1/universities",
+          { signal: controller.signal }
+        );
+        const json = await res.json();
+        if (res.ok && json?.universities) {
+          const sorted: University[] = json.universities.sort(
+            (a: University, b: University) => a.name.localeCompare(b.name)
+          );
+          setUniversities(sorted);
+        } else {
+          console.warn("Unexpected universities payload", json);
+          Alert.alert(
+            "Notice",
+            "Could not load universities from the server. You may try again later."
+          );
+        }
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        console.error("University fetch error", err);
+        Alert.alert(
+          "Network Error",
+          "Unable to fetch university list. Please check your connection."
+        );
+      } finally {
+        setUniLoading(false);
+      }
+    };
+
+    fetchUniversities();
+
+    return () => controller.abort();
   }, []);
 
-  const filteredUniversities = parsedUniversityList.filter((name) =>
-    name.toLowerCase().includes(search.toLowerCase())
-  );
+  // ---------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------
+  const filteredUniversities = useMemo(() => {
+    if (!search) return universities;
+    return universities.filter((u) =>
+      u.name.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [search, universities]);
 
-  const handleSelect = (name: string) => {
-    setSearch(name);
-    setSelectedUniversity(name);
+  const handleSelect = (uni: University) => {
+    setSelectedUniversity(uni);
+    setSearch(uni.name);
     setShowDropdown(false);
     Keyboard.dismiss();
   };
 
   const handleRegister = async () => {
-    if (!fullName || !password || !selectedUniversity) {
-      Alert.alert("Error", "Please fill in all fields and select a university.");
+    if (
+      !firstName ||
+      !lastName ||
+      !username ||
+      !email ||
+      !password ||
+      !selectedUniversity
+    ) {
+      Alert.alert(
+        "Error",
+        "Please fill in all fields and select a university."
+      );
       return;
     }
 
     setLoading(true);
 
     try {
-      const response = await fetch("https://universe.terabytecomputing.com:3000/api/v1/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: fullName,
-          password,
-          email: "teett@df.com",
-          universityId: "edd750a7-1972-463d-a983-4fab60b2e9be",
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        if (data.token) {
-          await AsyncStorage.setItem("authToken", data.token);
-          router.replace("/(tabs)/personal");
-        } else {
-          Alert.alert("Success", "Registration successful! Please log in.");
-          router.replace("/");
+      // 1) Create the account ------------------------------------ //
+      const regRes = await fetch(
+        "https://universe.terabytecomputing.com:3000/api/v1/register",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            first_name: firstName,
+            last_name: lastName,
+            username,
+            password,
+            email,
+            universityId: selectedUniversity.id,
+          }),
         }
+      );
+
+      const regData = await regRes.json();
+
+      if (!regRes.ok) {
+        Alert.alert(
+          "Registration Failed",
+          regData.message || "Could not register. Please try again."
+        );
+        return;
+      }
+
+      // 2) If registration returns a token, save it and go -------- //
+      if (regData?.token) {
+        await AsyncStorage.setItem("authToken", regData.token);
+        router.replace("/(tabs)/personal");
+        return;
+      }
+
+      // 3) Otherwise, immediately sign the new user in ------------ //
+      const loginRes = await fetch(
+        "https://universe.terabytecomputing.com:3000/api/v1/login",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        }
+      );
+      const loginData = await loginRes.json();
+
+      if (loginRes.ok && loginData.token) {
+        await AsyncStorage.setItem("authToken", loginData.token);
+        router.replace("/(tabs)/personal");
       } else {
-        Alert.alert("Registration Failed", data.message || "Could not register. Please try again.");
+        // Registration succeeded but automatic login failed.
+        Alert.alert(
+          "Almost there!",
+          "Account created successfully. Please sign in with your new credentials."
+        );
+        router.replace("/");
       }
     } catch (error) {
       console.error("Registration error:", error);
-      Alert.alert("Error", "An unexpected error occurred. Please try again later.");
+      Alert.alert(
+        "Error",
+        "An unexpected error occurred. Please try again later."
+      );
     } finally {
       setLoading(false);
     }
   };
 
+  // =========================================================
+  // UI
+  // =========================================================
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.backButton} onPress={() => router.back()} disabled={loading}>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => router.back()}
+        disabled={loading}
+      >
         <Ionicons name="arrow-back" size={24} color="#000" />
       </TouchableOpacity>
 
       <View style={styles.formContainer}>
         <Text style={styles.title}>Sign Up</Text>
 
+        {/* First Name */}
         <TextInput
-          placeholder="Full Name"
-          value={fullName}
-          onChangeText={setFullName}
+          placeholder="First Name"
+          value={firstName}
+          onChangeText={setFirstName}
           style={styles.input}
           editable={!loading}
+          autoCapitalize="words"
         />
 
+        {/* Last Name */}
+        <TextInput
+          placeholder="Last Name"
+          value={lastName}
+          onChangeText={setLastName}
+          style={styles.input}
+          editable={!loading}
+          autoCapitalize="words"
+        />
+
+        {/* Username */}
+        <TextInput
+          placeholder="Username"
+          value={username}
+          onChangeText={setUsername}
+          style={styles.input}
+          editable={!loading}
+          autoCapitalize="none"
+        />
+
+        {/* Email */}
+        <TextInput
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          style={styles.input}
+          editable={!loading}
+          autoCapitalize="none"
+        />
+
+        {/* Password */}
         <View style={styles.passwordContainer}>
           <TextInput
             placeholder="Password"
@@ -116,42 +254,56 @@ const SignUpScreen = () => {
             style={styles.passwordInput}
             editable={!loading}
           />
-          <TouchableOpacity onPress={() => setPasswordVisible(!passwordVisible)}>
-            <Ionicons name={passwordVisible ? "eye" : "eye-off"} size={24} color="#000" />
+          <TouchableOpacity
+            onPress={() => setPasswordVisible(!passwordVisible)}
+          >
+            <Ionicons
+              name={passwordVisible ? "eye" : "eye-off"}
+              size={24}
+              color="#000"
+            />
           </TouchableOpacity>
         </View>
 
-        <TextInput
-          placeholder="Select University"
-          value={search}
-          onChangeText={(text) => {
-            setSearch(text);
-            if (selectedUniversity && text !== selectedUniversity) {
-              setSelectedUniversity(null);
-            }
-            setShowDropdown(true);
-          }}
-          onFocus={() => setShowDropdown(true)}
-          onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
-          style={styles.input}
-          editable={!loading}
-        />
+        {/* University Search */}
+        {uniLoading ? (
+          <ActivityIndicator style={{ marginVertical: 20 }} />
+        ) : (
+          <>
+            <TextInput
+              placeholder="Select University"
+              value={search}
+              onChangeText={(text) => {
+                setSearch(text);
+                if (selectedUniversity && text !== selectedUniversity.name) {
+                  setSelectedUniversity(null);
+                }
+                setShowDropdown(true);
+              }}
+              onFocus={() => setShowDropdown(true)}
+              onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+              style={styles.input}
+              editable={!loading}
+            />
 
-        {showDropdown && (
-          <FlatList
-            data={filteredUniversities}
-            keyExtractor={(item, index) => `${item}-${index}`}
-            style={styles.dropdown}
-            keyboardShouldPersistTaps="handled"
-            nestedScrollEnabled
-            renderItem={({ item }) => (
-              <TouchableOpacity onPress={() => handleSelect(item)}>
-                <Text style={styles.dropdownItem}>{item}</Text>
-              </TouchableOpacity>
+            {showDropdown && (
+              <FlatList
+                data={filteredUniversities}
+                keyExtractor={(item) => item.id}
+                style={styles.dropdown}
+                keyboardShouldPersistTaps="handled"
+                nestedScrollEnabled
+                renderItem={({ item }) => (
+                  <TouchableOpacity onPress={() => handleSelect(item)}>
+                    <Text style={styles.dropdownItem}>{item.name}</Text>
+                  </TouchableOpacity>
+                )}
+              />
             )}
-          />
+          </>
         )}
 
+        {/* Register Button */}
         <TouchableOpacity
           style={[styles.registerButton, loading ? styles.buttonDisabled : {}]}
           onPress={handleRegister}

@@ -660,6 +660,26 @@ router.get("/events", async (req, res) => {
   }
 });
 
+router.get("/universities", async (req, res) => {
+  try {
+    const universities = await University.find({}).lean();
+    // for each one delete _id
+    universities.forEach((uni) => {
+      delete uni._id;
+    });
+    if (universities.length === 0) {
+      return res.status(404).json({ message: "No universities found" });
+    }
+    res.json({ universities });
+  } catch (error) {
+    console.error("Error fetching universities:", error);
+    res.status(500).json({
+      message: "Error fetching universities",
+      error: error.message,
+    });
+  }
+});
+
 // -------------------------------------------------
 // Mount the API Router with a Prefix & Start Server
 // -------------------------------------------------
@@ -681,5 +701,4 @@ https.createServer(sslOptions, app).listen(PORT, "0.0.0.0", () => {
     `Server is running on port ${PORT} in ${config.environment} mode (HTTPS).`
   );
   console.log(`API endpoints are prefixed with "${API_PREFIX}"`);
-  // import courses from CSV if needed here
 });
