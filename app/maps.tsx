@@ -7,23 +7,23 @@ import {
   StatusBar,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { getCurrentLocation } from "../backend/location"; // Assuming this path is correct
+import { getCurrentLocation } from "../backend/location";
 
-// Define the interface for location data
+// Location Data
 interface LocationData {
   id: string;
   name: string;
   description: string;
-  // Add latitude/longitude if needed for map focusing in handleLocationPress
-  // latitude: number;
-  // longitude: number;
+  latitude: number;
+  longitude: number;
 }
 
-// Define the interface for user location state
+// User Location State
 interface UserLocation {
   latitude: number;
   longitude: number;
@@ -31,188 +31,156 @@ interface UserLocation {
   longitudeDelta: number;
 }
 
-// --- Refactor 1: Moved constant data outside the component ---
-// This prevents redefining the array on every render.
+// Real nearby places (near CCI Building, Drexel)
 const nearbyLocations: LocationData[] = [
   {
     id: "1",
-    name: "The Franklin Institute",
-    description: "Science museum with interactive exhibits, 0.8 miles away",
+    name: "Drexel Recreation Center",
+    description: "Modern gym and fitness classes",
+    latitude: 39.9566,
+    longitude: -75.1914,
   },
   {
     id: "2",
-    name: "Reading Terminal Market",
-    description: "Historic food market with diverse vendors, 1.2 miles away",
+    name: "Wawa (34th & Market)",
+    description: "Convenience store, quick snacks",
+    latitude: 39.9559,
+    longitude: -75.1910,
   },
   {
     id: "3",
-    name: "Rittenhouse Square",
-    description: "Vibrant park with events and greenery, 1.0 mile away",
+    name: "Sabrina's Cafe",
+    description: "Popular brunch spot near campus",
+    latitude: 39.9571,
+    longitude: -75.1918,
   },
   {
     id: "4",
-    name: "Sabrina's Cafe",
-    description: "Cozy spot for brunch and comfort food, 0.6 miles away",
+    name: "Lancaster Walk",
+    description: "Nice outdoor seating, event space",
+    latitude: 39.9578,
+    longitude: -75.1900,
   },
 ];
 
-// --- Refactor 2: Extracted Location Button into its own component ---
-// This improves modularity and cleans up the main component's render method.
+// Location Button
 interface LocationButtonProps {
   location: LocationData;
-  onPress: (name: string) => void;
+  onPress: (location: LocationData) => void;
 }
 
-const LocationButton: React.FC<LocationButtonProps> = ({
-  location,
-  onPress,
-}) => (
+const LocationButton: React.FC<LocationButtonProps> = ({ location, onPress }) => (
   <TouchableOpacity
     style={styles.locationButton}
-    onPress={() => onPress(location.name)}
+    onPress={() => onPress(location)}
     activeOpacity={0.8}
   >
     <View style={styles.buttonContent}>
-      <Text style={styles.buttonText}>{location.name}</Text>
+      <Text style={styles.buttonTitle}>{location.name}</Text>
       <Text style={styles.buttonDescription}>{location.description}</Text>
     </View>
-    <Ionicons name="chevron-forward" size={20} color="#555" />
+    <Ionicons name="chevron-forward" size={20} color="#888" />
   </TouchableOpacity>
 );
 
-// Main Screen Component
+// Main Screen
 export default function MapScreen() {
   const router = useRouter();
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchLocation = async () => {
-      setLoading(true); // Ensure loading is true at the start
-      setErrorMsg(null); // Clear previous errors
       try {
         const location = await getCurrentLocation();
-        if (location) {
-          setUserLocation({
-            ...location,
-            latitudeDelta: 0.01, // Smaller delta for closer zoom initially
-            longitudeDelta: 0.01,
-          });
-        } else {
-          // This case might occur if getCurrentLocation returns null without throwing
-          throw new Error("Could not determine your location");
-        }
+        setUserLocation({
+          latitude: location?.latitude ?? 0,
+          longitude: location?.longitude ?? 0,
+          latitudeDelta: 0.008,
+          longitudeDelta: 0.008,
+        });
       } catch (error: any) {
-        const message =
-          error.message || "An unknown error occurred while fetching location.";
-        setErrorMsg(message);
-        Alert.alert(
-          "Location Error",
-          `Unable to determine your current location. Please ensure location services are enabled and permissions granted.\n\nError: ${message}`,
-          [{ text: "OK" }]
-        );
+        setErrorMsg(error.message || "Could not fetch location.");
       } finally {
-        setLoading(false); // Set loading to false in both success and error cases
+        setLoading(false);
       }
     };
 
     fetchLocation();
-  }, []); // Empty dependency array ensures this runs only once on mount
+  }, []);
 
-  const handleLocationPress = (locationName: string) => {
-    // In a real app, you might use the location's coordinates
-    // to pan/zoom the map using mapRef.current.animateToRegion(...)
+  const handleLocationPress = (location: LocationData) => {
     Alert.alert(
-      "Location Selected",
-      `You selected ${locationName}. In a complete app, the map would focus on this location.`,
+      location.name,
+      `Location selected: ${location.description}`,
       [{ text: "OK" }]
     );
   };
 
-  // Helper function to render map content based on state
   const renderMapContent = () => {
     if (loading) {
       return (
-        <View style={[styles.map, styles.loadingContainer]}>
-          <Text style={styles.loadingText}>Loading map...</Text>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4682B4" />
+          <Text style={styles.loadingText}>Loading your location...</Text>
         </View>
       );
     }
     if (errorMsg || !userLocation) {
       return (
-        <View style={[styles.map, styles.loadingContainer]}>
+        <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>
-            {errorMsg || "Unable to load map. Location not available."}
+            {errorMsg || "Location unavailable."}
           </Text>
         </View>
       );
     }
-    // Only render MapView if we have a location and no error
     return (
       <MapView
         style={styles.map}
         region={userLocation}
         showsUserLocation={true}
-        followsUserLocation={true} // Might want to disable if user manually pans
       >
-        <Marker
-          coordinate={{
-            latitude: userLocation.latitude,
-            longitude: userLocation.longitude,
-          }}
-          title="You are here"
-          description="Your current location"
-          pinColor="blue" // Consider using a custom marker icon
-        />
-        {/* Optional: Add markers for nearby locations if they have coordinates */}
-        {/* {nearbyLocations.map(loc => (
-          loc.latitude && loc.longitude ? (
-            <Marker
-              key={loc.id}
-              coordinate={{ latitude: loc.latitude, longitude: loc.longitude }}
-              title={loc.name}
-              description={loc.description.split(',')[0]} // Shorter description
-            />
-          ) : null
-        ))} */}
+        {nearbyLocations.map((loc) => (
+          <Marker
+            key={loc.id}
+            coordinate={{ latitude: loc.latitude, longitude: loc.longitude }}
+            title={loc.name}
+            description={loc.description}
+          />
+        ))}
       </MapView>
     );
   };
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#4682B4" />
-
+      <StatusBar barStyle="light-content" backgroundColor="#004B87" />
+      
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.replace("/")} // Or router.back() if appropriate
-          activeOpacity={0.7}
-        >
+        <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
-        <Text style={styles.title}>Nearby Places</Text>
-        {/* Placeholder for potential right-side header actions */}
-        <View style={{ width: 40 }} />
+        <Text style={styles.headerTitle}>Nearby Locations</Text>
+        <View style={{ width: 24 }} /> {/* Placeholder to balance layout */}
       </View>
 
-      {/* Map Section */}
+      {/* Map */}
       <View style={styles.mapContainer}>{renderMapContent()}</View>
 
-      {/* Location List Section */}
-      <View style={styles.bottomSection}>
-        <Text style={styles.sectionTitle}>Locations Near You</Text>
+      {/* Bottom Section */}
+      <View style={styles.bottomContainer}>
+        <Text style={styles.sectionTitle}>Near Locations </Text>
         <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContentContainer}
-          showsVerticalScrollIndicator={false} // Hide scroll bar if desired
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
         >
-          {nearbyLocations.map((location) => (
+          {nearbyLocations.map((loc) => (
             <LocationButton
-              key={location.id}
-              location={location}
+              key={loc.id}
+              location={loc}
               onPress={handleLocationPress}
             />
           ))}
@@ -222,109 +190,79 @@ export default function MapScreen() {
   );
 }
 
-// Styles remain largely the same, added/adjusted a few
+// Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
   },
   header: {
-    height: 100, // Adjust height as needed, consider using react-native-safe-area-context
-    backgroundColor: "#4682B4", // Steel Blue
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between", // Better alignment
-    paddingTop: StatusBar.currentHeight || 40, // Use StatusBar height or fallback
-    paddingHorizontal: 16,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "white",
-    textAlign: "center",
-    // Removed flex: 1 and marginRight as space-between handles positioning
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 20,
-    // Slightly less intense background for subtlety
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
-  },
-  mapContainer: {
-    flex: 0.5, // Represents 50% of the available space below header
-    width: "100%",
-    backgroundColor: "#e0e0e0", // Background color while map loads/fails
-  },
-  map: {
-    ...StyleSheet.absoluteFillObject, // Ensures map fills its container
-  },
-  loadingContainer: {
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#f5f5f5", // Light grey background for loading/error state
-  },
-  loadingText: {
-    fontSize: 16,
-    color: "#666",
-    textAlign: "center",
-    paddingHorizontal: 20,
-  },
-  bottomSection: {
-    flex: 0.5, // Represents 50% of the available space
-    backgroundColor: "#f8f9fa", // Very light grey, almost white
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    borderTopWidth: 1, // Add a subtle separator line
-    borderTopColor: "#eaeaea",
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "600", // Semibold
-    color: "#333", // Darker grey for title
-    marginBottom: 12,
-  },
-  scrollView: {
-    flex: 1, // Ensures ScrollView takes available space in bottomSection
-  },
-  scrollContentContainer: {
-    paddingBottom: 16, // Add padding at the bottom of the scrollable content
-  },
-  // Styles specific to the LocationButton component (kept here for simplicity)
-  locationButton: {
-    backgroundColor: "white",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    marginBottom: 10,
+    backgroundColor: "#004B87", // Drexel Blue
+    height: 90,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    // iOS Shadow
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    // Android Elevation
+    paddingTop: StatusBar.currentHeight || 40,
+    paddingHorizontal: 16,
+  },
+  headerTitle: {
+    fontSize: 20,
+    color: "white",
+    fontWeight: "600",
+  },
+  mapContainer: {
+    flex: 0.5,
+    width: "100%",
+  },
+  map: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: "#555",
+  },
+  bottomContainer: {
+    flex: 0.5,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    backgroundColor: "#f9f9f9",
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#222",
+    marginBottom: 12,
+  },
+  scrollContainer: {
+    paddingBottom: 20,
+  },
+  locationButton: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
     elevation: 2,
-    // Subtle border
-    borderWidth: 1,
-    borderColor: "#eaeaea",
   },
   buttonContent: {
-    flex: 1, // Allow content to take up space, pushing icon to the right
-    marginRight: 8, // Add space between text content and chevron icon
+    flex: 1,
   },
-  buttonText: {
+  buttonTitle: {
     fontSize: 16,
-    fontWeight: "600", // Semibold
+    fontWeight: "600",
     color: "#333",
   },
   buttonDescription: {
-    fontSize: 14,
-    color: "#666", // Slightly lighter grey for description
-    marginTop: 4,
+    fontSize: 13,
+    color: "#666",
+    marginTop: 2,
   },
 });
