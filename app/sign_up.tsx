@@ -3,12 +3,16 @@ import {
   View,
   Text,
   StyleSheet,
+  TextInput,
   TouchableOpacity,
   FlatList,
-  TextInput,
   Keyboard,
   Alert,
   ActivityIndicator,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  StatusBar,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -21,7 +25,7 @@ interface University {
 
 const SignUpScreen = () => {
   const router = useRouter();
-  // ---------------------- form state ---------------------- //
+
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [username, setUsername] = useState("");
@@ -29,23 +33,15 @@ const SignUpScreen = () => {
   const [password, setPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
 
-  // ------------------- university search ------------------ //
   const [universities, setUniversities] = useState<University[]>([]);
   const [search, setSearch] = useState("");
-  const [selectedUniversity, setSelectedUniversity] =
-    useState<University | null>(null);
+  const [selectedUniversity, setSelectedUniversity] = useState<University | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [uniLoading, setUniLoading] = useState(true);
-
-  // ---------------------- request state ------------------- //
   const [loading, setLoading] = useState(false);
 
-  // =========================================================
-  // Fetch universities once when the component mounts.
-  // =========================================================
   useEffect(() => {
     const controller = new AbortController();
-
     const fetchUniversities = async () => {
       try {
         const res = await fetch(
@@ -54,37 +50,25 @@ const SignUpScreen = () => {
         );
         const json = await res.json();
         if (res.ok && json?.universities) {
-          const sorted: University[] = json.universities.sort(
-            (a: University, b: University) => a.name.localeCompare(b.name)
+          const sorted: University[] = json.universities.sort((a, b) =>
+            a.name.localeCompare(b.name)
           );
           setUniversities(sorted);
         } else {
-          console.warn("Unexpected universities payload", json);
-          Alert.alert(
-            "Notice",
-            "Could not load universities from the server. You may try again later."
-          );
+          Alert.alert("Notice", "Could not load universities from the server.");
         }
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
-        console.error("University fetch error", err);
-        Alert.alert(
-          "Network Error",
-          "Unable to fetch university list. Please check your connection."
-        );
+        Alert.alert("Network Error", "Unable to fetch university list.");
       } finally {
         setUniLoading(false);
       }
     };
 
     fetchUniversities();
-
     return () => controller.abort();
   }, []);
 
-  // ---------------------------------------------------------
-  // Helpers
-  // ---------------------------------------------------------
   const filteredUniversities = useMemo(() => {
     if (!search) return universities;
     return universities.filter((u) =>
@@ -108,24 +92,17 @@ const SignUpScreen = () => {
       !password ||
       !selectedUniversity
     ) {
-      Alert.alert(
-        "Error",
-        "Please fill in all fields and select a university."
-      );
+      Alert.alert("Error", "Please fill in all fields and select a university.");
       return;
     }
 
     setLoading(true);
-
     try {
-      // 1) Create the account ------------------------------------ //
       const regRes = await fetch(
         "https://universe.terabytecomputing.com:3000/api/v1/register",
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             first_name: firstName,
             last_name: lastName,
@@ -147,14 +124,12 @@ const SignUpScreen = () => {
         return;
       }
 
-      // 2) If registration returns a token, save it and go -------- //
       if (regData?.token) {
         await AsyncStorage.setItem("authToken", regData.token);
         router.replace("/(tabs)/personal");
         return;
       }
 
-      // 3) Otherwise, immediately sign the new user in ------------ //
       const loginRes = await fetch(
         "https://universe.terabytecomputing.com:3000/api/v1/login",
         {
@@ -169,243 +144,233 @@ const SignUpScreen = () => {
         await AsyncStorage.setItem("authToken", loginData.token);
         router.replace("/(tabs)/personal");
       } else {
-        // Registration succeeded but automatic login failed.
-        Alert.alert(
-          "Almost there!",
-          "Account created successfully. Please sign in with your new credentials."
-        );
+        Alert.alert("Almost there!", "Account created. Please sign in manually.");
         router.replace("/");
       }
     } catch (error) {
-      console.error("Registration error:", error);
-      Alert.alert(
-        "Error",
-        "An unexpected error occurred. Please try again later."
-      );
+      Alert.alert("Error", "An unexpected error occurred.");
     } finally {
       setLoading(false);
     }
   };
 
-  // =========================================================
-  // UI
-  // =========================================================
   return (
-    <View style={styles.container}>
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => router.back()}
-        disabled={loading}
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardAvoidingView}
       >
-        <Ionicons name="arrow-back" size={24} color="#000" />
-      </TouchableOpacity>
+        <View style={styles.contentContainer}>
+          <Text style={styles.title}>Create an account</Text>
+          <Text style={styles.subtitle}>Fill in your details to get started</Text>
 
-      <View style={styles.formContainer}>
-        <Text style={styles.title}>Sign Up</Text>
+          <View style={styles.formContainer}>
+            {[{ label: "First Name", value: firstName, setter: setFirstName },
+              { label: "Last Name", value: lastName, setter: setLastName },
+              { label: "Username", value: username, setter: setUsername },
+              { label: "Email", value: email, setter: setEmail }].map((field, i) => (
+              <View key={i}>
+                <Text style={styles.inputLabel}>{field.label}</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder={field.label}
+                  value={field.value}
+                  onChangeText={field.setter}
+                  autoCapitalize="none"
+                  editable={!loading}
+                />
+              </View>
+            ))}
 
-        {/* First Name */}
-        <TextInput
-          placeholder="First Name"
-          value={firstName}
-          onChangeText={setFirstName}
-          style={styles.input}
-          editable={!loading}
-          autoCapitalize="words"
-        />
-
-        {/* Last Name */}
-        <TextInput
-          placeholder="Last Name"
-          value={lastName}
-          onChangeText={setLastName}
-          style={styles.input}
-          editable={!loading}
-          autoCapitalize="words"
-        />
-
-        {/* Username */}
-        <TextInput
-          placeholder="Username"
-          value={username}
-          onChangeText={setUsername}
-          style={styles.input}
-          editable={!loading}
-          autoCapitalize="none"
-        />
-
-        {/* Email */}
-        <TextInput
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          style={styles.input}
-          editable={!loading}
-          autoCapitalize="none"
-        />
-
-        {/* Password */}
-        <View style={styles.passwordContainer}>
-          <TextInput
-            placeholder="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={!passwordVisible}
-            style={styles.passwordInput}
-            editable={!loading}
-          />
-          <TouchableOpacity
-            onPress={() => setPasswordVisible(!passwordVisible)}
-          >
-            <Ionicons
-              name={passwordVisible ? "eye" : "eye-off"}
-              size={24}
-              color="#000"
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* University Search */}
-        {uniLoading ? (
-          <ActivityIndicator style={{ marginVertical: 20 }} />
-        ) : (
-          <>
-            <TextInput
-              placeholder="Select University"
-              value={search}
-              onChangeText={(text) => {
-                setSearch(text);
-                if (selectedUniversity && text !== selectedUniversity.name) {
-                  setSelectedUniversity(null);
-                }
-                setShowDropdown(true);
-              }}
-              onFocus={() => setShowDropdown(true)}
-              onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
-              style={styles.input}
-              editable={!loading}
-            />
-
-            {showDropdown && (
-              <FlatList
-                data={filteredUniversities}
-                keyExtractor={(item) => item.id}
-                style={styles.dropdown}
-                keyboardShouldPersistTaps="handled"
-                nestedScrollEnabled
-                renderItem={({ item }) => (
-                  <TouchableOpacity onPress={() => handleSelect(item)}>
-                    <Text style={styles.dropdownItem}>{item.name}</Text>
-                  </TouchableOpacity>
-                )}
+            <Text style={styles.inputLabel}>Password</Text>
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="Password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!passwordVisible}
+                editable={!loading}
               />
-            )}
-          </>
-        )}
+              <TouchableOpacity onPress={() => setPasswordVisible(!passwordVisible)}>
+                <Ionicons name={passwordVisible ? "eye" : "eye-off"} size={22} color="#86868B" />
+              </TouchableOpacity>
+            </View>
 
-        {/* Register Button */}
-        <TouchableOpacity
-          style={[styles.registerButton, loading ? styles.buttonDisabled : {}]}
-          onPress={handleRegister}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.registerButtonText}>Register</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-    </View>
+            <Text style={styles.inputLabel}>University</Text>
+            {uniLoading ? (
+              <ActivityIndicator style={{ marginVertical: 20 }} />
+            ) : (
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Search University"
+                  value={search}
+                  onChangeText={(text) => {
+                    setSearch(text);
+                    if (selectedUniversity && text !== selectedUniversity.name) {
+                      setSelectedUniversity(null);
+                    }
+                    setShowDropdown(true);
+                  }}
+                  onFocus={() => setShowDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+                  editable={!loading}
+                />
+
+                {showDropdown && (
+                  <FlatList
+                    data={filteredUniversities}
+                    keyExtractor={(item) => item.id}
+                    style={styles.dropdown}
+                    keyboardShouldPersistTaps="handled"
+                    nestedScrollEnabled
+                    renderItem={({ item }) => (
+                      <TouchableOpacity onPress={() => handleSelect(item)}>
+                        <Text style={styles.dropdownItem}>{item.name}</Text>
+                      </TouchableOpacity>
+                    )}
+                  />
+                )}
+              </>
+            )}
+
+            <TouchableOpacity
+              style={[styles.signInButton, loading ? styles.buttonDisabled : styles.signInButtonActive]}
+              onPress={handleRegister}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : (
+                <Text style={styles.signInButtonText}>Register</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.bottomContainer}>
+            <TouchableOpacity onPress={() => router.push("/")}>
+              <Text style={styles.bottomText}>
+                Already have an account? <Text style={styles.signUpLink}>Sign in</Text>
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
   },
-  backButton: {
-    position: "absolute",
-    top: 50,
-    left: 20,
-    padding: 10,
-    zIndex: 10,
+  keyboardAvoidingView: {
+    flex: 1,
   },
-  formContainer: {
+  contentContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingBottom: 50,
+    paddingHorizontal: 24,
   },
   title: {
     fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 40,
+    fontWeight: "600",
+    color: "#1D1D1F",
     textAlign: "center",
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 17,
+    color: "#86868B",
+    textAlign: "center",
+    marginBottom: 40,
+  },
+  formContainer: {
+    width: "100%",
+    maxWidth: 360,
+  },
+  inputLabel: {
+    fontSize: 17,
+    fontWeight: "500",
+    color: "#1D1D1F",
+    marginBottom: 8,
+    marginTop: 16,
   },
   input: {
-    width: "90%",
-    height: 50,
-    borderColor: "#ccc",
+    width: "100%",
+    height: 44,
+    backgroundColor: "#F5F5F7",
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    fontSize: 17,
+    color: "#1D1D1F",
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    marginBottom: 20,
-    backgroundColor: "#fff",
-    fontSize: 16,
+    borderColor: "#E5E5EA",
   },
   passwordContainer: {
-    width: "90%",
-    height: 50,
     flexDirection: "row",
     alignItems: "center",
-    borderColor: "#ccc",
+    backgroundColor: "#F5F5F7",
+    borderRadius: 10,
     borderWidth: 1,
-    borderRadius: 8,
-    backgroundColor: "#fff",
-    marginBottom: 20,
-    paddingHorizontal: 15,
+    borderColor: "#E5E5EA",
+    paddingHorizontal: 16,
+    height: 44,
   },
   passwordInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 17,
+    color: "#1D1D1F",
   },
   dropdown: {
-    width: "90%",
-    maxHeight: 250,
+    backgroundColor: "#F5F5F7",
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    backgroundColor: "#fff",
+    borderColor: "#E5E5EA",
+    maxHeight: 200,
     marginTop: 5,
   },
   dropdownItem: {
+    paddingHorizontal: 16,
     paddingVertical: 12,
-    paddingHorizontal: 15,
     fontSize: 16,
+    color: "#1D1D1F",
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: "#E5E5EA",
   },
-  registerButton: {
-    backgroundColor: "#000",
-    width: "90%",
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 20,
+  signInButton: {
+    borderRadius: 10,
     height: 50,
+    alignItems: "center",
     justifyContent: "center",
+    marginTop: 32,
   },
-  registerButtonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
+  signInButtonActive: {
+    backgroundColor: "#0066CC",
+  },
+  signInButtonText: {
+    fontSize: 17,
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
   buttonDisabled: {
-    backgroundColor: "#aaa",
+    backgroundColor: "#0066CC80",
+  },
+  bottomContainer: {
+    marginTop: 30,
+    alignItems: "center",
+  },
+  bottomText: {
+    fontSize: 15,
+    color: "#1D1D1F",
+  },
+  signUpLink: {
+    color: "#0066CC",
+    fontWeight: "500",
   },
 });
 
