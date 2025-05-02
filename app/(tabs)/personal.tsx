@@ -1,47 +1,60 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  Image,
   ScrollView,
   Switch,
   TouchableOpacity,
   SafeAreaView,
   ActivityIndicator,
+  StatusBar,
+  Platform,
 } from "react-native";
-
-// AsyncStorage for storing/retrieving auth tokens
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-// Navigation hook from Expo Router
 import { useRouter } from "expo-router";
-
-// Clipboard for copying text to clipboard
 import * as Clipboard from "expo-clipboard";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const PersonalScreen = () => {
-  // State to store user profile data
-  const [user, setUser] = React.useState<any>(null);
+type UserProfile = {
+  _id: string;
+  first_name: string;
+  last_name: string;
+  university?: {
+    name: string;
+  };
+};
 
-  // State for enabling/disabling notifications
-  const [notificationsEnabled, setNotificationsEnabled] =
-    React.useState<boolean>(true);
+type SettingToggleProps = {
+  title: string;
+  value: boolean;
+  onValueChange: (val: boolean) => void;
+};
 
-  // State for toggling dark mode
-  const [darkModeEnabled, setDarkModeEnabled] = React.useState<boolean>(false);
+type SettingItemProps = {
+  title: string;
+  onPress?: () => void;
+};
 
+type Props = {
+  navigation?: any;
+};
+
+const PersonalScreen: React.FC<Props> = ({ navigation }) => {
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
+  const [darkModeEnabled, setDarkModeEnabled] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
-  // Fetch user profile on component mount
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchProfile = async () => {
       try {
-        // Get the stored authentication token
+        setIsLoading(true);
         const token = await AsyncStorage.getItem("authToken");
 
         if (token) {
-          // Fetch user profile using token for authentication
           const response = await fetch(
             "https://universe.terabytecomputing.com:3000/api/v1/profile",
             {
@@ -55,66 +68,92 @@ const PersonalScreen = () => {
           const data = await response.json();
           console.log("Profile API response:", data);
 
-          // Save user data to state
           if (data) {
             setUser(data);
           }
         }
       } catch (error) {
         console.error("Error fetching profile:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchProfile();
   }, []);
 
-  // Handle logout by clearing the token and navigating to the login screen
   const handleLogout = async () => {
     await AsyncStorage.removeItem("authToken");
     router.replace("/");
   };
 
-  // Copy user ID to clipboard
   const handleCopyId = async () => {
     if (user && user._id) {
       await Clipboard.setStringAsync(user._id);
     }
   };
 
-  // Show loading indicator while profile is being fetched
-  if (!user) {
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.containerCenter}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Loading Profile...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  // Main UI rendering when user data is available
-  return (
+  const renderLoadingState = () => (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+      <View style={styles.containerCenter}>
+        <ActivityIndicator size="large" color="#0066CC" />
+        <Text style={styles.loadingText}>Loading Profile...</Text>
+      </View>
+    </SafeAreaView>
+  );
+
+  const renderSettingToggle: React.FC<SettingToggleProps> = ({ title, value, onValueChange }) => (
+    <View style={styles.settingRow}>
+      <Text style={styles.settingText}>{title}</Text>
+      <Switch 
+        value={value} 
+        onValueChange={onValueChange}
+        trackColor={{ false: "#E5E5EA", true: "#0066CC" }}
+        thumbColor={Platform.OS === 'ios' ? undefined : value ? "#FFFFFF" : "#F5F5F7"}
+      />
+    </View>
+  );
+
+  const renderSettingItem: React.FC<SettingItemProps> = ({ title, onPress }) => (
+    <TouchableOpacity 
+      style={styles.settingRow} 
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <Text style={styles.settingText}>{title}</Text>
+      <Text style={styles.settingArrow}>→</Text>
+    </TouchableOpacity>
+  );
+
+  const renderProfile = () => (
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" />
+      <View style={[styles.headerContainer, { paddingTop: insets.top > 0 ? 8 : 16 }]}>
+        <Text style={styles.header}>Profile</Text>
+      </View>
+      <ScrollView 
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
         {/* User profile info */}
         <View style={styles.profileContainer}>
-          <Image
-            source={require("../../assets/images/home.png")}
-            style={styles.profileImage}
-          />
-          <View style={{ flex: 1 }}>
+          <View style={styles.blankProfileIcon} />
+          <View style={styles.profileDetails}>
             <Text style={styles.name}>
-              {user.first_name} {user.last_name}
+              {user?.first_name} {user?.last_name}
             </Text>
             <Text style={styles.university}>
-              {user.university && user.university.name
+              {user?.university && user.university.name
                 ? user.university.name
                 : "University Not Set"}
             </Text>
-            <View   style={styles.idRow}>
-              <Text style={styles.userId}>ID: {user._id}</Text>
-              <TouchableOpacity onPress={handleCopyId}>
+            <View style={styles.idRow}>
+              <Text style={styles.userId}>ID: {user?._id}</Text>
+              <TouchableOpacity 
+                onPress={handleCopyId}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
                 <Text style={styles.copyButton}>Copy</Text>
               </TouchableOpacity>
             </View>
@@ -124,136 +163,148 @@ const PersonalScreen = () => {
         {/* Preferences section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Preferences</Text>
-          <SettingToggle
-            title="Enable Notifications"
-            value={notificationsEnabled}
-            onValueChange={setNotificationsEnabled}
-          />
-          <SettingToggle
-            title="Dark Mode"
-            value={darkModeEnabled}
-            onValueChange={setDarkModeEnabled}
-          />
+          {renderSettingToggle({
+            title: "Enable Notifications",
+            value: notificationsEnabled,
+            onValueChange: setNotificationsEnabled,
+          })}
+          {renderSettingToggle({
+            title: "Dark Mode",
+            value: darkModeEnabled,
+            onValueChange: setDarkModeEnabled,
+          })}
         </View>
 
         {/* Account settings */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account</Text>
-          <SettingItem title="Edit Profile" />
-          <SettingItem title="Change Password" />
-          <SettingItem title="Privacy Settings" />
-          <SettingItem title="Maps" onPress={() => router.push("/maps")} />         
+          {renderSettingItem({ title: "Edit Profile" })}
+          {renderSettingItem({ title: "Change Password" })}
+          {renderSettingItem({ title: "Privacy Settings" })}
+          {renderSettingItem({ 
+            title: "Maps", 
+            onPress: () => router.push("/maps") 
+          })}         
         </View>
+        
         {/* Logout button */}
-        <View style={styles.section}>
-          <TouchableOpacity onPress={handleLogout}>
-            <Text style={styles.logout}>Log Out</Text>
+        <View style={styles.logoutSection}>
+          <TouchableOpacity 
+            onPress={handleLogout}
+            style={styles.logoutButton}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.logoutText}>Log Out</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
+
+  if (isLoading || !user) {
+    return renderLoadingState();
+  }
+
+  return renderProfile();
 };
 
-// Reusable toggle component for settings
-const SettingToggle = ({
-  title,
-  value,
-  onValueChange,
-}: {
-  title: string;
-  value: boolean;
-  onValueChange: (val: boolean) => void;
-}) => (
-  <View style={styles.settingRow}>
-    <Text style={styles.settingText}>{title}</Text>
-    <Switch value={value} onValueChange={onValueChange} />
-  </View>
-);
-
-// Reusable setting item (button-style)
-const SettingItem = ({
-  title,
-  onPress,
-}: {
-  title: string;
-  onPress?: () => void;
-}) => (
-  <TouchableOpacity style={styles.settingRow} onPress={onPress}>
-    <Text style={styles.settingText}>{title}</Text>
-  </TouchableOpacity>
-);
-
-
-// Styles for the screen and components
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#F2F2F7",
+    backgroundColor: "#FFFFFF",
   },
   container: {
-    padding: 16,
+    flex: 1,
+    backgroundColor: "#FFFFFF",
   },
   containerCenter: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#FFFFFF",
+  },
+  headerContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5EA",
+  },
+  header: {
+    fontSize: 28,
+    fontWeight: "600",
+    color: "#1D1D1F",
   },
   loadingText: {
-    marginTop: 8,
+    marginTop: 12,
     fontSize: 16,
-    color: "#007AFF",
+    color: "#0066CC",
+    fontWeight: "500",
   },
   profileContainer: {
     flexDirection: "row",
-    backgroundColor: "#fff",
+    backgroundColor: "#F5F5F7",
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 10,
     alignItems: "center",
-    marginBottom: 24,
+    marginHorizontal: 16,
+    marginVertical: 16,
   },
-  profileImage: {
+  blankProfileIcon: {
     width: 64,
     height: 64,
     borderRadius: 32,
+    backgroundColor: "#D1D1D6",
     marginRight: 16,
   },
+  profileDetails: {
+    flex: 1,
+  },
   name: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "600",
-    color: "#111",
+    color: "#1D1D1F",
   },
   university: {
     fontSize: 16,
-    color: "#555",
-    marginTop: 2,
+    color: "#86868B",
+    marginTop: 4,
   },
   idRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 4,
+    marginTop: 8,
   },
   userId: {
     fontSize: 14,
-    color: "#888",
+    color: "#86868B",
   },
   copyButton: {
     marginLeft: 8,
     fontSize: 14,
-    color: "#007AFF",
+    color: "#0066CC",
     fontWeight: "500",
   },
   section: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
+    backgroundColor: "#F5F5F7",
+    borderRadius: 10,
     padding: 16,
+    marginHorizontal: 16,
     marginBottom: 16,
+  },
+  logoutSection: {
+    backgroundColor: "#F5F5F7",
+    borderRadius: 10,
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 24,
+    alignItems: "center",
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 12,
-    color: "#333",
+    color: "#1D1D1F",
   },
   settingRow: {
     flexDirection: "row",
@@ -261,13 +312,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#ccc",
+    borderBottomColor: "#E5E5EA",
   },
   settingText: {
     fontSize: 16,
-    color: "#111",
+    color: "#1D1D1F",
   },
-  logout: {
+  settingArrow: {
+    fontSize: 16,
+    color: "#86868B",
+  },
+  logoutButton: {
+    width: "100%",
+    paddingVertical: 12,
+  },
+  logoutText: {
     fontSize: 16,
     color: "#FF3B30",
     fontWeight: "600",
