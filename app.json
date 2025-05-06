@@ -12,7 +12,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "universe.app.ios",
       "config": {
-        "googleMapsApiKey": "AIzaSyB44mou6Ke6WguyJ8SGFL3YMDipySRuacU"
+        "googleMapsApiKey": "AIzaSyCQUsFlneb_ij4IeVMNd56HPwThkXH2BDA"
       }
     },
     "android": {
@@ -22,7 +22,7 @@
       },
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyB44mou6Ke6WguyJ8SGFL3YMDipySRuacU"
+          "apiKey": "AIzaSyCQUsFlneb_ij4IeVMNd56HPwThkXH2BDA"
         }
       },
       "package": "universe.app.ios"

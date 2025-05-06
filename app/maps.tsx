@@ -10,11 +10,39 @@ import {
   ActivityIndicator,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { getCurrentLocation } from "../backend/location";
+import * as Location from "expo-location";
+import { router } from "expo-router";
 
-// Location Data
+// ✅ Real Fetch Function using Google Places API
+async function fetchNearbyLocations(latitude: number, longitude: number): Promise<LocationData[]> {
+  const apiKey = "AIzaSyCQUsFlneb_ij4IeVMNd56HPwThkXH2BDA"; // Your API Key
+  const radius = 1000; // meters
+  const type = "restaurant"; // Change this to 'cafe', 'library', etc., depending on the places you're looking for
+
+  const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=${radius}&type=${type}&key=${apiKey}`;
+
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.status !== "OK") {
+      throw new Error(`Google Places API Error: ${data.status}`);
+    }
+
+    return data.results.map((place: any, index: number) => ({
+      id: place.place_id || `${index}`,
+      name: place.name,
+      description: place.vicinity || "No description available",
+      latitude: place.geometry.location.lat,
+      longitude: place.geometry.location.lng,
+    }));
+  } catch (error) {
+    console.error("Failed to fetch nearby locations:", error);
+    throw error;
+  }
+}
+
 interface LocationData {
   id: string;
   name: string;
@@ -23,7 +51,6 @@ interface LocationData {
   longitude: number;
 }
 
-// User Location State
 interface UserLocation {
   latitude: number;
   longitude: number;
@@ -31,50 +58,11 @@ interface UserLocation {
   longitudeDelta: number;
 }
 
-// Real nearby places (near CCI Building, Drexel)
-const nearbyLocations: LocationData[] = [
-  {
-    id: "1",
-    name: "Drexel Recreation Center",
-    description: "Modern gym and fitness classes",
-    latitude: 39.9566,
-    longitude: -75.1914,
-  },
-  {
-    id: "2",
-    name: "Wawa (34th & Market)",
-    description: "Convenience store, quick snacks",
-    latitude: 39.9559,
-    longitude: -75.1910,
-  },
-  {
-    id: "3",
-    name: "Sabrina's Cafe",
-    description: "Popular brunch spot near campus",
-    latitude: 39.9571,
-    longitude: -75.1918,
-  },
-  {
-    id: "4",
-    name: "Lancaster Walk",
-    description: "Nice outdoor seating, event space",
-    latitude: 39.9578,
-    longitude: -75.1900,
-  },
-];
-
-// Location Button
-interface LocationButtonProps {
-  location: LocationData;
-  onPress: (location: LocationData) => void;
-}
-
-const LocationButton: React.FC<LocationButtonProps> = ({ location, onPress }) => (
-  <TouchableOpacity
-    style={styles.locationButton}
-    onPress={() => onPress(location)}
-    activeOpacity={0.8}
-  >
+const LocationButton: React.FC<{ location: LocationData; onPress: (loc: LocationData) => void }> = ({
+  location,
+  onPress,
+}) => (
+  <TouchableOpacity style={styles.locationButton} onPress={() => onPress(location)} activeOpacity={0.8}>
     <View style={styles.buttonContent}>
       <Text style={styles.buttonTitle}>{location.name}</Text>
       <Text style={styles.buttonDescription}>{location.description}</Text>
@@ -83,23 +71,37 @@ const LocationButton: React.FC<LocationButtonProps> = ({ location, onPress }) =>
   </TouchableOpacity>
 );
 
-// Main Screen
 export default function MapScreen() {
-  const router = useRouter();
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [loading, setLoading] = useState(true);
+  const [nearbyLocations, setNearbyLocations] = useState<LocationData[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchLocation = async () => {
+    const fetchLocationAndPlaces = async () => {
       try {
-        const location = await getCurrentLocation();
-        setUserLocation({
-          latitude: location?.latitude ?? 0,
-          longitude: location?.longitude ?? 0,
+        // Get the user's current location
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          setErrorMsg("Permission to access location was denied");
+          return;
+        }
+
+        const location = await Location.getCurrentPositionAsync({});
+        const { latitude, longitude } = location.coords;
+
+        // Update the user location state
+        const formattedLocation = {
+          latitude,
+          longitude,
           latitudeDelta: 0.008,
           longitudeDelta: 0.008,
-        });
+        };
+        setUserLocation(formattedLocation);
+
+        // Fetch nearby locations based on the user's location
+        const nearby = await fetchNearbyLocations(latitude, longitude);
+        setNearbyLocations(nearby);
       } catch (error: any) {
         setErrorMsg(error.message || "Could not fetch location.");
       } finally {
@@ -107,15 +109,11 @@ export default function MapScreen() {
       }
     };
 
-    fetchLocation();
+    fetchLocationAndPlaces();
   }, []);
 
   const handleLocationPress = (location: LocationData) => {
-    Alert.alert(
-      location.name,
-      `Location selected: ${location.description}`,
-      [{ text: "OK" }]
-    );
+    Alert.alert(location.name, `Location selected: ${location.description}`, [{ text: "OK" }]);
   };
 
   const renderMapContent = () => {
@@ -123,25 +121,21 @@ export default function MapScreen() {
       return (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4682B4" />
-          <Text style={styles.loadingText}>Loading your location...</Text>
+          <Text style={styles.loadingText}>Loading nearby locations...</Text>
         </View>
       );
     }
+
     if (errorMsg || !userLocation) {
       return (
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>
-            {errorMsg || "Location unavailable."}
-          </Text>
+          <Text style={styles.loadingText}>{errorMsg || "Location unavailable."}</Text>
         </View>
       );
     }
+
     return (
-      <MapView
-        style={styles.map}
-        region={userLocation}
-        showsUserLocation={true}
-      >
+      <MapView style={styles.map} region={userLocation} showsUserLocation={true}>
         {nearbyLocations.map((loc) => (
           <Marker
             key={loc.id}
@@ -157,32 +151,21 @@ export default function MapScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#004B87" />
-      
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Nearby Locations</Text>
-        <View style={{ width: 24 }} /> {/* Placeholder to balance layout */}
+        <View style={{ width: 24 }} />
       </View>
 
-      {/* Map */}
       <View style={styles.mapContainer}>{renderMapContent()}</View>
 
-      {/* Bottom Section */}
       <View style={styles.bottomContainer}>
-        <Text style={styles.sectionTitle}>Near Locations </Text>
-        <ScrollView
-          contentContainerStyle={styles.scrollContainer}
-          showsVerticalScrollIndicator={false}
-        >
+        <Text style={styles.sectionTitle}>Nearby Locations</Text>
+        <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
           {nearbyLocations.map((loc) => (
-            <LocationButton
-              key={loc.id}
-              location={loc}
-              onPress={handleLocationPress}
-            />
+            <LocationButton key={loc.id} location={loc} onPress={handleLocationPress} />
           ))}
         </ScrollView>
       </View>
@@ -190,32 +173,73 @@ export default function MapScreen() {
   );
 }
 
-// Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#f5f5f5",
   },
   header: {
-    backgroundColor: "#004B87", // Drexel Blue
-    height: 90,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingTop: StatusBar.currentHeight || 40,
-    paddingHorizontal: 16,
+    backgroundColor: "#004B87",
+    padding: 16,
   },
   headerTitle: {
-    fontSize: 20,
     color: "white",
-    fontWeight: "600",
+    fontSize: 18,
+    fontWeight: "bold",
   },
   mapContainer: {
-    flex: 0.5,
-    width: "100%",
+    flex: 1,
   },
   map: {
     ...StyleSheet.absoluteFillObject,
+  },
+  bottomContainer: {
+    backgroundColor: "white",
+    padding: 16,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 8,
+  },
+  scrollContainer: {
+    paddingBottom: 16,
+  },
+  locationButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#f9f9f9",
+    padding: 12,
+    marginBottom: 8,
+    borderRadius: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  buttonContent: {
+    flex: 1,
+  },
+  buttonTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    marginBottom: 4,
+  },
+  buttonDescription: {
+    fontSize: 12,
+    color: "#666",
   },
   loadingContainer: {
     flex: 1,
@@ -223,46 +247,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: "#555",
-  },
-  bottomContainer: {
-    flex: 0.5,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    backgroundColor: "#f9f9f9",
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#222",
-    marginBottom: 12,
-  },
-  scrollContainer: {
-    paddingBottom: 20,
-  },
-  locationButton: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    marginBottom: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    elevation: 2,
-  },
-  buttonContent: {
-    flex: 1,
-  },
-  buttonTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-  },
-  buttonDescription: {
-    fontSize: 13,
+    marginTop: 8,
+    fontSize: 14,
     color: "#666",
-    marginTop: 2,
   },
 });
