@@ -50,7 +50,7 @@ const SignUpScreen = () => {
         );
         const json = await res.json();
         if (res.ok && json?.universities) {
-          const sorted: University[] = json.universities.sort((a, b) =>
+          const sorted: University[] = json.universities.sort((a: University, b: University) =>
             a.name.localeCompare(b.name)
           );
           setUniversities(sorted);
