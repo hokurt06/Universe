@@ -16,6 +16,7 @@ import { useRouter } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+// User Profile and other props
 type UserProfile = {
   _id: string;
   first_name: string;
@@ -93,23 +94,43 @@ const PersonalScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+  // Light and Dark Theme
+  const lightTheme = {
+    background: "#FFFFFF",
+    text: "#1D1D1F",
+    header: "#0066CC",
+    sectionBackground: "#F5F5F7",
+    buttonText: "#FF3B30",
+  };
+
+  const darkTheme = {
+    background: "#121212",
+    text: "#FFFFFF",
+    header: "#0066CC",
+    sectionBackground: "#2C2C2C",
+    buttonText: "#FF3B30",
+  };
+
+  // Theme selector
+  const currentTheme = darkModeEnabled ? darkTheme : lightTheme;
+
   const renderLoadingState = () => (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: currentTheme.background }]}>
       <StatusBar barStyle="dark-content" />
       <View style={styles.containerCenter}>
-        <ActivityIndicator size="large" color="#0066CC" />
-        <Text style={styles.loadingText}>Loading Profile...</Text>
+        <ActivityIndicator size="large" color={currentTheme.header} />
+        <Text style={[styles.loadingText, { color: currentTheme.text }]}>Loading Profile...</Text>
       </View>
     </SafeAreaView>
   );
 
   const renderSettingToggle: React.FC<SettingToggleProps> = ({ title, value, onValueChange }) => (
-    <View style={styles.settingRow}>
-      <Text style={styles.settingText}>{title}</Text>
+    <View style={[styles.settingRow, { backgroundColor: currentTheme.sectionBackground }]}>
+      <Text style={[styles.settingText, { color: currentTheme.text }]}>{title}</Text>
       <Switch 
         value={value} 
         onValueChange={onValueChange}
-        trackColor={{ false: "#E5E5EA", true: "#0066CC" }}
+        trackColor={{ false: "#E5E5EA", true: currentTheme.header }}
         thumbColor={Platform.OS === 'ios' ? undefined : value ? "#FFFFFF" : "#F5F5F7"}
       />
     </View>
@@ -117,20 +138,20 @@ const PersonalScreen: React.FC<Props> = ({ navigation }) => {
 
   const renderSettingItem: React.FC<SettingItemProps> = ({ title, onPress }) => (
     <TouchableOpacity 
-      style={styles.settingRow} 
+      style={[styles.settingRow, { backgroundColor: currentTheme.sectionBackground }]} 
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <Text style={styles.settingText}>{title}</Text>
-      <Text style={styles.settingArrow}>→</Text>
+      <Text style={[styles.settingText, { color: currentTheme.text }]}>{title}</Text>
+      <Text style={[styles.settingArrow, { color: currentTheme.text }]}>→</Text>
     </TouchableOpacity>
   );
 
   const renderProfile = () => (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: currentTheme.background }]}>
       <StatusBar barStyle="dark-content" />
       <View style={[styles.headerContainer, { paddingTop: insets.top > 0 ? 8 : 16 }]}>
-        <Text style={styles.header}>Profile</Text>
+        <Text style={[styles.header, { color: currentTheme.header }]}>Profile</Text>
       </View>
       <ScrollView 
         style={styles.container}
@@ -140,21 +161,21 @@ const PersonalScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.profileContainer}>
           <View style={styles.blankProfileIcon} />
           <View style={styles.profileDetails}>
-            <Text style={styles.name}>
+            <Text style={[styles.name, { color: currentTheme.text }]}>
               {user?.first_name} {user?.last_name}
             </Text>
-            <Text style={styles.university}>
+            <Text style={[styles.university, { color: currentTheme.text }]}>
               {user?.university && user.university.name
                 ? user.university.name
                 : "University Not Set"}
             </Text>
             <View style={styles.idRow}>
-              <Text style={styles.userId}>ID: {user?._id}</Text>
+              <Text style={[styles.userId, { color: currentTheme.text }]}>ID: {user?._id}</Text>
               <TouchableOpacity 
                 onPress={handleCopyId}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Text style={styles.copyButton}>Copy</Text>
+                <Text style={[styles.copyButton, { color: currentTheme.header }]}>Copy</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -162,7 +183,7 @@ const PersonalScreen: React.FC<Props> = ({ navigation }) => {
 
         {/* Preferences section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preferences</Text>
+          <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>Preferences</Text>
           {renderSettingToggle({
             title: "Enable Notifications",
             value: notificationsEnabled,
@@ -177,7 +198,7 @@ const PersonalScreen: React.FC<Props> = ({ navigation }) => {
 
         {/* Account settings */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
+          <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>Account</Text>
           {renderSettingItem({ title: "Edit Profile" })}
           {renderSettingItem({ title: "Change Password" })}
           {renderSettingItem({ title: "Privacy Settings" })}
@@ -191,10 +212,10 @@ const PersonalScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.logoutSection}>
           <TouchableOpacity 
             onPress={handleLogout}
-            style={styles.logoutButton}
+            style={[styles.logoutButton, { backgroundColor: currentTheme.sectionBackground }]}
             activeOpacity={0.7}
           >
-            <Text style={styles.logoutText}>Log Out</Text>
+            <Text style={[styles.logoutText, { color: currentTheme.buttonText }]}>Log Out</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -211,39 +232,32 @@ const PersonalScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
   },
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
   },
   containerCenter: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
   },
   headerContainer: {
     paddingHorizontal: 20,
     paddingBottom: 16,
-    backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E5EA",
   },
   header: {
     fontSize: 28,
     fontWeight: "600",
-    color: "#1D1D1F",
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: "#0066CC",
     fontWeight: "500",
   },
   profileContainer: {
     flexDirection: "row",
-    backgroundColor: "#F5F5F7",
     padding: 16,
     borderRadius: 10,
     alignItems: "center",
@@ -263,11 +277,9 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#1D1D1F",
   },
   university: {
     fontSize: 16,
-    color: "#86868B",
     marginTop: 4,
   },
   idRow: {
@@ -277,23 +289,19 @@ const styles = StyleSheet.create({
   },
   userId: {
     fontSize: 14,
-    color: "#86868B",
   },
   copyButton: {
     marginLeft: 8,
     fontSize: 14,
-    color: "#0066CC",
     fontWeight: "500",
   },
   section: {
-    backgroundColor: "#F5F5F7",
     borderRadius: 10,
     padding: 16,
     marginHorizontal: 16,
     marginBottom: 16,
   },
   logoutSection: {
-    backgroundColor: "#F5F5F7",
     borderRadius: 10,
     padding: 16,
     marginHorizontal: 16,
@@ -304,7 +312,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 12,
-    color: "#1D1D1F",
   },
   settingRow: {
     flexDirection: "row",
@@ -316,7 +323,6 @@ const styles = StyleSheet.create({
   },
   settingText: {
     fontSize: 16,
-    color: "#1D1D1F",
   },
   settingArrow: {
     fontSize: 16,
@@ -328,7 +334,6 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     fontSize: 16,
-    color: "#FF3B30",
     fontWeight: "600",
     textAlign: "center",
   },
