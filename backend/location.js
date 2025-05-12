@@ -1,4 +1,4 @@
-// utils/location.js
+// backend/location.js
 
 import * as Location from 'expo-location';
 

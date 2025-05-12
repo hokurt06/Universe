@@ -12,7 +12,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "universe.app.ios",
       "config": {
-        "googleMapsApiKey": "AIzaSyCQUsFlneb_ij4IeVMNd56HPwThkXH2BDA"
+       
+        "googleMapsApiKey": "AIzaSyA1FGYJAXU_a9HjGJheT06c9WmRV3rrap4"
       }
     },
     "android": {
@@ -21,8 +22,8 @@
         "backgroundColor": "#ffffff"
       },
       "config": {
-        "googleMaps": {
-          "apiKey": "AIzaSyCQUsFlneb_ij4IeVMNd56HPwThkXH2BDA"
+                "googleMaps": {
+          "apiKey": "AIzaSyA1FGYJAXU_a9HjGJheT06c9WmRV3rrap4"
         }
       },
       "package": "universe.app.ios"
@@ -47,6 +48,10 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+   
+    "extra": {
+      "googlePlacesApiKey": "AIzaSyA1FGYJAXU_a9HjGJheT06c9WmRV3rrap4"
     }
   }
 }
