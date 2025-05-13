@@ -199,7 +199,11 @@ const PersonalScreen: React.FC<Props> = ({ navigation }) => {
         {/* Account settings */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>Account</Text>
-          {renderSettingItem({ title: "Edit Profile" })}
+          {renderSettingItem({ 
+  title: "Edit Profile",
+  onPress: () => router.push("/edit-profile")
+})}
+
           {renderSettingItem({ title: "Change Password" })}
           {renderSettingItem({ title: "Privacy Settings" })}
           {renderSettingItem({ 
