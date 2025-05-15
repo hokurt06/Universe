@@ -11,6 +11,7 @@ import {
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
+import { useThemeStore } from "../../hooks/themeStore";
 
 const AcademicScreen: React.FC = () => {
   const [selectedTerm, setSelectedTerm] = useState<string>("");
@@ -19,7 +20,26 @@ const AcademicScreen: React.FC = () => {
   const [courses, setCourses] = useState<any[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
 
+  const { isDarkMode } = useThemeStore();
   const router = useRouter();
+
+  const theme = isDarkMode
+    ? {
+        background: "#121212",
+        text: "#FFFFFF",
+        header: "#FFFFFF",
+        sectionBackground: "#2C2C2C",
+        divider: "#444",
+        arrow: "#BBBBBB",
+      }
+    : {
+        background: "#F9F9F9",
+        text: "#1C1C1E",
+        header: "#1C1C1E",
+        sectionBackground: "#FFFFFF",
+        divider: "#E5E5EA",
+        arrow: "#007AFF",
+      };
 
   useEffect(() => {
     const fetchTerms = async () => {
@@ -82,7 +102,6 @@ const AcademicScreen: React.FC = () => {
     fetchCourses();
   }, []);
 
-  // Filter enrollments for the selected term.
   const coursesForTerm = courses.filter(
     (enrollment) => enrollment.quarter === selectedTerm
   );
@@ -97,41 +116,39 @@ const AcademicScreen: React.FC = () => {
 
   if (selectedCourse) {
     return (
-      <SafeAreaView style={styles.safeContainer}>
+      <SafeAreaView style={[styles.safeContainer, { backgroundColor: theme.background }]}>
         <View style={styles.container}>
-          {/* Back button with chevron */}
           <TouchableOpacity
             style={styles.backIconContainer}
             onPress={closeCourse}
           >
-            <Ionicons name="chevron-back" size={28} color="#007AFF" />
+            <Ionicons name="chevron-back" size={28} color={theme.arrow} />
           </TouchableOpacity>
 
-          <Text style={styles.header}>Course Details</Text>
+          <Text style={[styles.header, { color: theme.header }]}>Course Details</Text>
 
-          <ScrollView style={styles.courseDetailContainer}>
-            <Text style={styles.detailText}>
+          <ScrollView style={[styles.courseDetailContainer, { backgroundColor: theme.sectionBackground }]}>
+            <Text style={[styles.detailText, { color: theme.text }]}>
               <Text style={styles.boldText}>Course: </Text>
-              {selectedCourse.course.title} ({selectedCourse.course.course_code}
-              )
+              {selectedCourse.course.title} ({selectedCourse.course.course_code})
             </Text>
-            <Text style={styles.detailText}>
+            <Text style={[styles.detailText, { color: theme.text }]}>
               <Text style={styles.boldText}>Quarter: </Text>
               {selectedCourse.quarter}
             </Text>
-            <Text style={styles.detailText}>
+            <Text style={[styles.detailText, { color: theme.text }]}>
               <Text style={styles.boldText}>Section: </Text>
               {selectedCourse.section}
             </Text>
-            <Text style={styles.detailText}>
+            <Text style={[styles.detailText, { color: theme.text }]}>
               <Text style={styles.boldText}>Professor: </Text>
               {selectedCourse.professor}
             </Text>
-            <Text style={styles.detailText}>
+            <Text style={[styles.detailText, { color: theme.text }]}>
               <Text style={styles.boldText}>Meeting Time: </Text>
               {selectedCourse.meeting_time}
             </Text>
-            <Text style={styles.detailText}>
+            <Text style={[styles.detailText, { color: theme.text }]}>
               <Text style={styles.boldText}>Grade: </Text>
               {selectedCourse.grade || "N/A"}
             </Text>
@@ -142,33 +159,32 @@ const AcademicScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={styles.safeContainer}>
+    <SafeAreaView style={[styles.safeContainer, { backgroundColor: theme.background }]}>
       <View style={styles.container}>
-        <Text style={styles.header}>Academics</Text>
+        <Text style={[styles.header, { color: theme.header }]}>Academics</Text>
 
-        <View style={styles.card}>
-          <Text style={styles.gpa}>
+        <View style={[styles.card, { backgroundColor: theme.sectionBackground }]}>
+          <Text style={[styles.gpa, { color: theme.text }]}>
             GPA: <Text style={styles.boldText}>4.00</Text>
           </Text>
-          <Text style={styles.credits}>
+          <Text style={[styles.credits, { color: theme.text }]}>
             Total Credits: <Text style={styles.boldText}>20</Text>
           </Text>
         </View>
 
         <TouchableOpacity
-          style={styles.dropdownButton}
+          style={[styles.dropdownButton, { backgroundColor: theme.sectionBackground }]}
           onPress={() => setShowTermModal(true)}
         >
-          <Text style={styles.dropdownText}>
+          <Text style={[styles.dropdownText, { color: theme.arrow }]}>
             {selectedTerm ? `${selectedTerm} ▼` : "Select Term"}
           </Text>
         </TouchableOpacity>
 
-        {/* Term Modal */}
         <Modal transparent animationType="fade" visible={showTermModal}>
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalHeader}>Select Term</Text>
+            <View style={[styles.modalContent, { backgroundColor: theme.sectionBackground }]}>
+              <Text style={[styles.modalHeader, { color: theme.header }]}>Select Term</Text>
               {terms.map((option) => (
                 <TouchableOpacity
                   key={option.key}
@@ -178,11 +194,11 @@ const AcademicScreen: React.FC = () => {
                     setShowTermModal(false);
                   }}
                 >
-                  <Text style={styles.termOptionText}>{option.label}</Text>
+                  <Text style={[styles.termOptionText, { color: theme.arrow }]}>{option.label}</Text>
                 </TouchableOpacity>
               ))}
               <TouchableOpacity
-                style={styles.closeButton}
+                style={[styles.closeButton, { backgroundColor: theme.arrow }]}
                 onPress={() => setShowTermModal(false)}
               >
                 <Text style={styles.closeButtonText}>Cancel</Text>
@@ -200,26 +216,28 @@ const AcademicScreen: React.FC = () => {
             coursesForTerm.map((enrollment, index) => (
               <TouchableOpacity
                 key={`${enrollment.enrolled_at}-${index}`}
-                style={styles.classCard}
+                style={[styles.classCard, { backgroundColor: theme.sectionBackground }]}
                 onPress={() => openCourse(enrollment)}
               >
                 <View>
-                  <Text style={styles.classText}>
+                  <Text style={[styles.classText, { color: theme.text }]}>
                     {enrollment.course.title} ({enrollment.course.course_code})
                   </Text>
                 </View>
-                <Text style={styles.grade}>{enrollment.grade || "N/A"}</Text>
+                <Text style={[styles.grade, { color: theme.arrow }]}>
+                  {enrollment.grade || "N/A"}
+                </Text>
               </TouchableOpacity>
             ))
           ) : (
-            <Text style={styles.noCoursesText}>
+            <Text style={[styles.noCoursesText, { color: theme.text }]}>
               No courses found for {selectedTerm}
             </Text>
           )}
         </ScrollView>
 
         <TouchableOpacity
-          style={styles.advisorsButton}
+          style={[styles.advisorsButton, { backgroundColor: theme.arrow }]}
           onPress={() => router.push("/advisors")}
         >
           <Text style={styles.advisorsButtonText}>View Advisors</Text>
@@ -230,24 +248,15 @@ const AcademicScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  safeContainer: {
-    flex: 1,
-    backgroundColor: "#F9F9F9",
-  },
+  safeContainer: { flex: 1 },
   container: {
     flex: 1,
     alignItems: "center",
     paddingTop: 10,
     paddingHorizontal: 10,
   },
-  header: {
-    fontSize: 26,
-    fontWeight: "600",
-    color: "#1C1C1E",
-    marginBottom: 15,
-  },
+  header: { fontSize: 26, fontWeight: "600", marginBottom: 15 },
   card: {
-    backgroundColor: "#FFFFFF",
     width: "90%",
     padding: 20,
     borderRadius: 16,
@@ -257,25 +266,10 @@ const styles = StyleSheet.create({
     elevation: 3,
     marginBottom: 20,
   },
-  gpa: {
-    fontSize: 22,
-    fontWeight: "500",
-    color: "#333",
-    textAlign: "center",
-  },
-  credits: {
-    fontSize: 18,
-    fontWeight: "400",
-    color: "#666",
-    textAlign: "center",
-    marginTop: 5,
-  },
-  boldText: {
-    fontWeight: "700",
-    color: "#000",
-  },
+  gpa: { fontSize: 22, fontWeight: "500", textAlign: "center" },
+  credits: { fontSize: 18, fontWeight: "400", textAlign: "center", marginTop: 5 },
+  boldText: { fontWeight: "700" },
   dropdownButton: {
-    backgroundColor: "#FFFFFF",
     paddingVertical: 12,
     paddingHorizontal: 15,
     borderRadius: 12,
@@ -284,23 +278,13 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     width: "90%",
   },
-  dropdownText: {
-    fontSize: 20,
-    fontWeight: "500",
-    color: "#007AFF",
-  },
-  classesContainer: {
-    width: "90%",
-    flexGrow: 0,
-  },
-  classesContentContainer: {
-    paddingBottom: 120,
-  },
+  dropdownText: { fontSize: 20, fontWeight: "500" },
+  classesContainer: { width: "90%", flexGrow: 0 },
+  classesContentContainer: { paddingBottom: 120 },
   classCard: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
     padding: 15,
     borderRadius: 12,
     marginBottom: 10,
@@ -309,22 +293,9 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 2,
   },
-  classText: {
-    fontSize: 18,
-    fontWeight: "500",
-    color: "#222",
-  },
-  grade: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#007AFF",
-  },
-  noCoursesText: {
-    fontSize: 18,
-    color: "#666",
-    textAlign: "center",
-    marginTop: 20,
-  },
+  classText: { fontSize: 18, fontWeight: "500" },
+  grade: { fontSize: 18, fontWeight: "600" },
+  noCoursesText: { fontSize: 18, textAlign: "center", marginTop: 20 },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
@@ -332,7 +303,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalContent: {
-    backgroundColor: "#FFFFFF",
     width: "80%",
     padding: 20,
     borderRadius: 16,
@@ -342,74 +312,16 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 3,
   },
-  modalHeader: {
-    fontSize: 22,
-    fontWeight: "600",
-    color: "#1C1C1E",
-    marginBottom: 15,
-  },
-  termOption: {
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    width: "100%",
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  termOptionText: {
-    fontSize: 18,
-    color: "#007AFF",
-    textAlign: "center",
-  },
-  closeButton: {
-    backgroundColor: "#007AFF",
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 12,
-    marginTop: 20,
-  },
-  closeButtonText: {
-    fontSize: 18,
-    fontWeight: "500",
-    color: "#FFFFFF",
-  },
-  advisorsButton: {
-    padding: 12,
-    backgroundColor: "#007AFF",
-    borderRadius: 30,
-    width: "95%",
-    alignItems: "center",
-    position: "absolute",
-    bottom: 60,
-    left: "5%",
-    zIndex: 10,
-  },
-  advisorsButtonText: {
-    color: "#fff",
-    textAlign: "center",
-    fontWeight: "bold",
-    fontSize: 18,
-  },
-  courseDetailContainer: {
-    width: "90%",
-    backgroundColor: "#FFFFFF",
-    padding: 20,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  detailText: {
-    fontSize: 18,
-    color: "#555",
-    marginBottom: 15,
-  },
-  backIconContainer: {
-    position: "absolute",
-    top: 20,
-    left: 15,
-    zIndex: 10,
-  },
+  modalHeader: { fontSize: 22, fontWeight: "600", marginBottom: 15 },
+  termOption: { paddingVertical: 12, paddingHorizontal: 15, width: "100%", borderBottomWidth: 1, borderBottomColor: "#eee" },
+  termOptionText: { fontSize: 18, textAlign: "center" },
+  closeButton: { paddingVertical: 12, paddingHorizontal: 30, borderRadius: 12, marginTop: 20 },
+  closeButtonText: { fontSize: 18, fontWeight: "500", color: "#FFFFFF" },
+  advisorsButton: { padding: 12, borderRadius: 30, width: "95%", alignItems: "center", position: "absolute", bottom: 60, left: "5%", zIndex: 10 },
+  advisorsButtonText: { color: "#fff", textAlign: "center", fontWeight: "bold", fontSize: 18 },
+  courseDetailContainer: { width: "90%", padding: 20, borderRadius: 12, shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 10, elevation: 3 },
+  detailText: { fontSize: 18, marginBottom: 15 },
+  backIconContainer: { position: "absolute", top: 20, left: 15, zIndex: 10 },
 });
 
 export default AcademicScreen;

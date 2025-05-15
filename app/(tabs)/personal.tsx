@@ -15,6 +15,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useThemeStore } from "../../hooks/themeStore";
 
 type UserProfile = {
   _id: string;
@@ -28,10 +29,10 @@ type UserProfile = {
 const PersonalScreen: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [darkModeEnabled, setDarkModeEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { isDarkMode, toggleDarkMode } = useThemeStore();
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -70,7 +71,7 @@ const PersonalScreen: React.FC = () => {
     if (user?._id) await Clipboard.setStringAsync(user._id);
   };
 
-  const theme = darkModeEnabled
+  const theme = isDarkMode
     ? {
         background: "#121212",
         text: "#FFFFFF",
@@ -94,7 +95,7 @@ const PersonalScreen: React.FC = () => {
         <SafeAreaView style={{ flex: 0, backgroundColor: theme.background }} />
         <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
           <StatusBar
-            barStyle={darkModeEnabled ? "light-content" : "dark-content"}
+            barStyle={isDarkMode ? "light-content" : "dark-content"}
             backgroundColor={theme.background}
           />
           <View style={styles.containerCenter}>
@@ -111,7 +112,7 @@ const PersonalScreen: React.FC = () => {
       <SafeAreaView style={{ flex: 0, backgroundColor: theme.background }} />
       <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
         <StatusBar
-          barStyle={darkModeEnabled ? "light-content" : "dark-content"}
+          barStyle={isDarkMode ? "light-content" : "dark-content"}
           backgroundColor={theme.background}
         />
         <View style={[styles.headerContainer, { paddingTop: insets.top > 0 ? 8 : 16 }]}>
@@ -150,8 +151,8 @@ const PersonalScreen: React.FC = () => {
             <View style={styles.settingRow}>
               <Text style={[styles.settingText, { color: theme.text }]}>Dark Mode</Text>
               <Switch
-                value={darkModeEnabled}
-                onValueChange={setDarkModeEnabled}
+                value={isDarkMode}
+                onValueChange={toggleDarkMode}
                 trackColor={{ false: "#E5E5EA", true: "#0066CC" }}
                 thumbColor={Platform.OS === 'ios' ? undefined : "#FFFFFF"}
               />
