@@ -16,7 +16,6 @@ import { useRouter } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-// User Profile and other props
 type UserProfile = {
   _id: string;
   first_name: string;
@@ -26,26 +25,11 @@ type UserProfile = {
   };
 };
 
-type SettingToggleProps = {
-  title: string;
-  value: boolean;
-  onValueChange: (val: boolean) => void;
-};
-
-type SettingItemProps = {
-  title: string;
-  onPress?: () => void;
-};
-
-type Props = {
-  navigation?: any;
-};
-
-const PersonalScreen: React.FC<Props> = ({ navigation }) => {
+const PersonalScreen: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
-  const [darkModeEnabled, setDarkModeEnabled] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [darkModeEnabled, setDarkModeEnabled] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -54,7 +38,6 @@ const PersonalScreen: React.FC<Props> = ({ navigation }) => {
       try {
         setIsLoading(true);
         const token = await AsyncStorage.getItem("authToken");
-
         if (token) {
           const response = await fetch(
             "https://universe.terabytecomputing.com:3000/api/v1/profile",
@@ -65,13 +48,8 @@ const PersonalScreen: React.FC<Props> = ({ navigation }) => {
               },
             }
           );
-
           const data = await response.json();
-          console.log("Profile API response:", data);
-
-          if (data) {
-            setUser(data);
-          }
+          if (data) setUser(data);
         }
       } catch (error) {
         console.error("Error fetching profile:", error);
@@ -89,258 +67,143 @@ const PersonalScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleCopyId = async () => {
-    if (user && user._id) {
-      await Clipboard.setStringAsync(user._id);
-    }
+    if (user?._id) await Clipboard.setStringAsync(user._id);
   };
 
-  // Light and Dark Theme
-  const lightTheme = {
-    background: "#FFFFFF",
-    text: "#1D1D1F",
-    header: "#0066CC",
-    sectionBackground: "#F5F5F7",
-    buttonText: "#FF3B30",
-  };
-
-  const darkTheme = {
-    background: "#121212",
-    text: "#FFFFFF",
-    header: "#0066CC",
-    sectionBackground: "#2C2C2C",
-    buttonText: "#FF3B30",
-  };
-
-  // Theme selector
-  const currentTheme = darkModeEnabled ? darkTheme : lightTheme;
-
-  const renderLoadingState = () => (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: currentTheme.background }]}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.containerCenter}>
-        <ActivityIndicator size="large" color={currentTheme.header} />
-        <Text style={[styles.loadingText, { color: currentTheme.text }]}>Loading Profile...</Text>
-      </View>
-    </SafeAreaView>
-  );
-
-  const renderSettingToggle: React.FC<SettingToggleProps> = ({ title, value, onValueChange }) => (
-    <View style={[styles.settingRow, { backgroundColor: currentTheme.sectionBackground }]}>
-      <Text style={[styles.settingText, { color: currentTheme.text }]}>{title}</Text>
-      <Switch 
-        value={value} 
-        onValueChange={onValueChange}
-        trackColor={{ false: "#E5E5EA", true: currentTheme.header }}
-        thumbColor={Platform.OS === 'ios' ? undefined : value ? "#FFFFFF" : "#F5F5F7"}
-      />
-    </View>
-  );
-
-  const renderSettingItem: React.FC<SettingItemProps> = ({ title, onPress }) => (
-    <TouchableOpacity 
-      style={[styles.settingRow, { backgroundColor: currentTheme.sectionBackground }]} 
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
-      <Text style={[styles.settingText, { color: currentTheme.text }]}>{title}</Text>
-      <Text style={[styles.settingArrow, { color: currentTheme.text }]}>→</Text>
-    </TouchableOpacity>
-  );
-
-  const renderProfile = () => (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: currentTheme.background }]}>
-      <StatusBar barStyle="dark-content" />
-      <View style={[styles.headerContainer, { paddingTop: insets.top > 0 ? 8 : 16 }]}>
-        <Text style={[styles.header, { color: currentTheme.header }]}>Profile</Text>
-      </View>
-      <ScrollView 
-        style={styles.container}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* User profile info */}
-        <View style={styles.profileContainer}>
-          <View style={styles.blankProfileIcon} />
-          <View style={styles.profileDetails}>
-            <Text style={[styles.name, { color: currentTheme.text }]}>
-              {user?.first_name} {user?.last_name}
-            </Text>
-            <Text style={[styles.university, { color: currentTheme.text }]}>
-              {user?.university && user.university.name
-                ? user.university.name
-                : "University Not Set"}
-            </Text>
-            <View style={styles.idRow}>
-              <Text style={[styles.userId, { color: currentTheme.text }]}>ID: {user?._id}</Text>
-              <TouchableOpacity 
-                onPress={handleCopyId}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Text style={[styles.copyButton, { color: currentTheme.header }]}>Copy</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-
-        {/* Preferences section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>Preferences</Text>
-          {renderSettingToggle({
-            title: "Enable Notifications",
-            value: notificationsEnabled,
-            onValueChange: setNotificationsEnabled,
-          })}
-          {renderSettingToggle({
-            title: "Dark Mode",
-            value: darkModeEnabled,
-            onValueChange: setDarkModeEnabled,
-          })}
-        </View>
-
-        {/* Account settings */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: currentTheme.text }]}>Account</Text>
-          {renderSettingItem({ 
-  title: "Edit Profile",
-  onPress: () => router.push("/edit-profile")
-})}
-
-          {renderSettingItem({ title: "Change Password" })}
-          {renderSettingItem({ title: "Privacy Settings" })}
-          {renderSettingItem({ 
-            title: "Maps", 
-            onPress: () => router.push("/maps") 
-          })}         
-        </View>
-        
-        {/* Logout button */}
-        <View style={styles.logoutSection}>
-          <TouchableOpacity 
-            onPress={handleLogout}
-            style={[styles.logoutButton, { backgroundColor: currentTheme.sectionBackground }]}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.logoutText, { color: currentTheme.buttonText }]}>Log Out</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
+  const theme = darkModeEnabled
+    ? {
+        background: "#121212",
+        text: "#FFFFFF",
+        header: "#FFFFFF",
+        sectionBackground: "#2C2C2C",
+        divider: "#444",
+        arrow: "#BBBBBB",
+      }
+    : {
+        background: "#FFFFFF",
+        text: "#1D1D1F",
+        header: "#1D1D1F",
+        sectionBackground: "#F5F5F7",
+        divider: "#E5E5EA",
+        arrow: "#86868B",
+      };
 
   if (isLoading || !user) {
-    return renderLoadingState();
+    return (
+      <>
+        <SafeAreaView style={{ flex: 0, backgroundColor: theme.background }} />
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+          <StatusBar
+            barStyle={darkModeEnabled ? "light-content" : "dark-content"}
+            backgroundColor={theme.background}
+          />
+          <View style={styles.containerCenter}>
+            <ActivityIndicator size="large" color={"#0066CC"} />
+            <Text style={[styles.loadingText, { color: theme.text }]}>Loading Profile...</Text>
+          </View>
+        </SafeAreaView>
+      </>
+    );
   }
 
-  return renderProfile();
+  return (
+    <>
+      <SafeAreaView style={{ flex: 0, backgroundColor: theme.background }} />
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+        <StatusBar
+          barStyle={darkModeEnabled ? "light-content" : "dark-content"}
+          backgroundColor={theme.background}
+        />
+        <View style={[styles.headerContainer, { paddingTop: insets.top > 0 ? 8 : 16 }]}>
+          <Text style={[styles.header, { color: theme.header }]}>Profile</Text>
+        </View>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <View style={[styles.profileContainer, { backgroundColor: theme.sectionBackground }]}>
+            <View style={styles.blankProfileIcon} />
+            <View style={styles.profileDetails}>
+              <Text style={[styles.name, { color: theme.text }]}>
+                {user.first_name} {user.last_name}
+              </Text>
+              <Text style={[styles.university, { color: theme.text }]}>
+                {user.university?.name || "University Not Set"}
+              </Text>
+              <View style={styles.idRow}>
+                <Text style={[styles.userId, { color: theme.text }]}>ID: {user._id}</Text>
+                <TouchableOpacity onPress={handleCopyId} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                  <Text style={[styles.copyButton, { color: "#0066CC" }]}>Copy</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          <View style={[styles.section, { backgroundColor: theme.sectionBackground }]}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Preferences</Text>
+            <View style={styles.settingRow}>
+              <Text style={[styles.settingText, { color: theme.text }]}>Enable Notifications</Text>
+              <Switch
+                value={notificationsEnabled}
+                onValueChange={setNotificationsEnabled}
+                trackColor={{ false: "#E5E5EA", true: "#0066CC" }}
+                thumbColor={Platform.OS === 'ios' ? undefined : "#FFFFFF"}
+              />
+            </View>
+            <View style={styles.settingRow}>
+              <Text style={[styles.settingText, { color: theme.text }]}>Dark Mode</Text>
+              <Switch
+                value={darkModeEnabled}
+                onValueChange={setDarkModeEnabled}
+                trackColor={{ false: "#E5E5EA", true: "#0066CC" }}
+                thumbColor={Platform.OS === 'ios' ? undefined : "#FFFFFF"}
+              />
+            </View>
+          </View>
+
+          <View style={[styles.section, { backgroundColor: theme.sectionBackground }]}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Account</Text>
+            {["Edit Profile", "Change Password", "Privacy Settings"].map((item, index) => (
+              <TouchableOpacity key={index} style={styles.settingRow}>
+                <Text style={[styles.settingText, { color: theme.text }]}>{item}</Text>
+                <Text style={{ fontSize: 16, color: theme.arrow }}>→</Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={styles.settingRow} onPress={() => router.push("/maps")}>
+              <Text style={[styles.settingText, { color: theme.text }]}>Maps</Text>
+              <Text style={{ fontSize: 16, color: theme.arrow }}>→</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={[styles.logoutSection, { backgroundColor: theme.sectionBackground }]}>
+            <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+              <Text style={[styles.logoutText]}>Log Out</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </>
+  );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-  },
-  containerCenter: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  headerContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E5EA",
-  },
-  header: {
-    fontSize: 28,
-    fontWeight: "600",
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  profileContainer: {
-    flexDirection: "row",
-    padding: 16,
-    borderRadius: 10,
-    alignItems: "center",
-    marginHorizontal: 16,
-    marginVertical: 16,
-  },
-  blankProfileIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: "#D1D1D6",
-    marginRight: 16,
-  },
-  profileDetails: {
-    flex: 1,
-  },
-  name: {
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  university: {
-    fontSize: 16,
-    marginTop: 4,
-  },
-  idRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 8,
-  },
-  userId: {
-    fontSize: 14,
-  },
-  copyButton: {
-    marginLeft: 8,
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  section: {
-    borderRadius: 10,
-    padding: 16,
-    marginHorizontal: 16,
-    marginBottom: 16,
-  },
-  logoutSection: {
-    borderRadius: 10,
-    padding: 16,
-    marginHorizontal: 16,
-    marginBottom: 24,
-    alignItems: "center",
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 12,
-  },
-  settingRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#E5E5EA",
-  },
-  settingText: {
-    fontSize: 16,
-  },
-  settingArrow: {
-    fontSize: 16,
-    color: "#86868B",
-  },
-  logoutButton: {
-    width: "100%",
-    paddingVertical: 12,
-  },
-  logoutText: {
-    fontSize: 16,
-    fontWeight: "600",
-    textAlign: "center",
-  },
+  safeArea: { flex: 1 },
+  containerCenter: { flex: 1, justifyContent: "center", alignItems: "center" },
+  headerContainer: { paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#E5E5EA" },
+  header: { fontSize: 28, fontWeight: "600" },
+  loadingText: { marginTop: 12, fontSize: 16, fontWeight: "500" },
+  profileContainer: { flexDirection: "row", padding: 16, borderRadius: 10, alignItems: "center", marginHorizontal: 16, marginVertical: 16 },
+  blankProfileIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: "#D1D1D6", marginRight: 16 },
+  profileDetails: { flex: 1 },
+  name: { fontSize: 18, fontWeight: "600" },
+  university: { fontSize: 16, marginTop: 4 },
+  idRow: { flexDirection: "row", alignItems: "center", marginTop: 8 },
+  userId: { fontSize: 14 },
+  copyButton: { marginLeft: 8, fontSize: 14, fontWeight: "500" },
+  section: { borderRadius: 10, padding: 16, marginHorizontal: 16, marginBottom: 16 },
+  sectionTitle: { fontSize: 16, fontWeight: "600", marginBottom: 12 },
+  settingRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#E5E5EA" },
+  settingText: { fontSize: 16 },
+  logoutSection: { borderRadius: 10, padding: 16, marginHorizontal: 16, marginBottom: 24, alignItems: "center" },
+  logoutButton: { width: "100%", paddingVertical: 12 },
+  logoutText: { fontSize: 16, color: "#FF3B30", fontWeight: "600", textAlign: "center" },
 });
 
 export default PersonalScreen;
