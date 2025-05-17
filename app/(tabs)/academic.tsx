@@ -1,27 +1,74 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
   Modal,
   SafeAreaView,
+  StatusBar,
+  Animated,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { useThemeStore } from "../../hooks/themeStore";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+const SegmentedControl: React.FC<{
+  options: { key: string; label: string }[];
+  selectedValue: string;
+  onValueChange: (value: string) => void;
+  theme: any;
+}> = ({ options, selectedValue, onValueChange, theme }) => {
+  return (
+    <View style={[styles.segmentedControlContainer, { backgroundColor: theme.segmentBackground }]}>
+      {options.map((option) => (
+        <TouchableOpacity
+          key={option.key}
+          style={[
+            styles.segmentButton,
+            selectedValue === option.key ? [styles.segmentButtonActive, { backgroundColor: theme.segmentActiveBackground }] : null,
+          ]}
+          onPress={() => onValueChange(option.key)}
+          activeOpacity={0.8}
+        >
+          <Text
+            style={[
+              styles.segmentButtonText,
+              { color: theme.segmentText },
+              selectedValue === option.key ? { color: theme.segmentActiveText } : null,
+            ]}
+          >
+            {option.label}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+};
 
 const AcademicScreen: React.FC = () => {
   const [selectedTerm, setSelectedTerm] = useState<string>("");
   const [terms, setTerms] = useState<{ key: string; label: string }[]>([]);
-  const [showTermModal, setShowTermModal] = useState<boolean>(false);
+  const [showTermDropdown, setShowTermDropdown] = useState<boolean>(false);
   const [courses, setCourses] = useState<any[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
-
+  const [viewMode, setViewMode] = useState<"courses" | "summary">("courses");
+  
+  const modalAnimation = useRef(new Animated.Value(0)).current;
+  const fadeAnimation = useRef(new Animated.Value(1)).current;
+  
   const { isDarkMode } = useThemeStore();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+
+  const viewOptions = [
+    { key: "courses", label: "Courses" },
+    { key: "summary", label: "Summary" },
+  ];
 
   const theme = isDarkMode
     ? {
@@ -30,7 +77,15 @@ const AcademicScreen: React.FC = () => {
         header: "#FFFFFF",
         sectionBackground: "#2C2C2C",
         divider: "#444",
-        arrow: "#BBBBBB",
+        accent: "#0A84FF",
+        cardBorder: "#3A3A3C",
+        avatarBackground: "#0A84FF",
+        segmentBackground: "#2C2C2C",
+        segmentText: "#8E8E93",
+        segmentActiveBackground: "#3A3A3C",
+        segmentActiveText: "#FFFFFF",
+        listBackground: "#121212",
+        modalOverlay: "rgba(0,0,0,0.7)",
       }
     : {
         background: "#F9F9F9",
@@ -38,7 +93,15 @@ const AcademicScreen: React.FC = () => {
         header: "#1C1C1E",
         sectionBackground: "#FFFFFF",
         divider: "#E5E5EA",
-        arrow: "#007AFF",
+        accent: "#007AFF",
+        cardBorder: "#E5E5EA",
+        avatarBackground: "#007AFF",
+        segmentBackground: "#F2F2F7",
+        segmentText: "#8E8E93",
+        segmentActiveBackground: "#FFFFFF",
+        segmentActiveText: "#1C1C1E",
+        listBackground: "#F9F9F9",
+        modalOverlay: "rgba(0,0,0,0.5)",
       };
 
   useEffect(() => {
@@ -73,7 +136,7 @@ const AcademicScreen: React.FC = () => {
     };
 
     fetchTerms();
-  }, [selectedTerm]);
+  }, []);
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -108,220 +171,598 @@ const AcademicScreen: React.FC = () => {
 
   const openCourse = (course: any) => {
     setSelectedCourse(course);
+    
+    Animated.timing(modalAnimation, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
   };
 
   const closeCourse = () => {
-    setSelectedCourse(null);
+    Animated.timing(modalAnimation, {
+      toValue: 0,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => {
+      setSelectedCourse(null);
+    });
   };
 
-  if (selectedCourse) {
+  const handleTermSelection = (term: string) => {
+    setSelectedTerm(term);
+    setShowTermDropdown(false);
+  };
+
+  // Calculate GPA and total credits
+  const calculateAcademicSummary = () => {
+    if (courses.length === 0) return { gpa: 0, totalCredits: 0 };
+    
+    const completedCourses = courses.filter(course => course.grade);
+    
+    if (completedCourses.length === 0) return { gpa: 0, totalCredits: 0 };
+    
+    const gradePoints: { [key: string]: number } = {
+      'A+': 4.0, 'A': 4.0, 'A-': 3.7,
+      'B+': 3.3, 'B': 3.0, 'B-': 2.7,
+      'C+': 2.3, 'C': 2.0, 'C-': 1.7,
+      'D+': 1.3, 'D': 1.0, 'D-': 0.7,
+      'F': 0.0
+    };
+    
+    const totalCredits = completedCourses.reduce((sum, course) => 
+      sum + (course.credits || 0), 0);
+    
+    const totalPoints = completedCourses.reduce((sum, course) => {
+      const points = course.grade ? (gradePoints[course.grade] || 0) : 0;
+      return sum + points * (course.credits || 0);
+    }, 0);
+    
+    const gpa = totalPoints / totalCredits || 0;
+    
+    return { gpa: parseFloat(gpa.toFixed(2)), totalCredits };
+  };
+
+  const { gpa, totalCredits } = calculateAcademicSummary();
+
+  const renderCourseItem = ({ item }: { item: any }) => (
+    <TouchableOpacity
+      style={styles.classCard}
+      onPress={() => openCourse(item)}
+      activeOpacity={0.7}
+    >
+      <View style={styles.cardContent}>
+        <View style={styles.courseIdentifier}>
+          <View style={[styles.avatarContainer, { backgroundColor: theme.avatarBackground }]}>
+            <Text style={styles.avatarText}>
+              {item.course.course_code.substring(0, 1)}
+            </Text>
+          </View>
+          <View style={styles.courseDetails}>
+            <Text style={[styles.classText, { color: theme.text }]} numberOfLines={1}>
+              {item.course.title}
+            </Text>
+            <Text style={[styles.courseCode, { color: theme.segmentText }]}>
+              {item.course.course_code}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.courseInfo}>
+          <Text style={[styles.timeText, { color: theme.segmentText }]}>
+            Professor: {item.professor}
+          </Text>
+          <Text style={[styles.timeText, { color: theme.segmentText }]}>
+            Time: {item.meeting_time}
+          </Text>
+          {item.grade && (
+            <View style={styles.gradeContainer}>
+              <Text style={[styles.timeText, { color: theme.segmentText }]}>
+                Grade:
+              </Text>
+              <View style={[styles.gradeBadge, { backgroundColor: theme.avatarBackground }]}>
+                <Text style={styles.gradeBadgeText}>{item.grade}</Text>
+              </View>
+            </View>
+          )}
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
+  const renderEmptyState = () => (
+    <View style={styles.emptyState}>
+      <View style={[styles.emptyStateIcon, { backgroundColor: theme.segmentBackground }]}>
+        <Text style={styles.emptyStateIconText}>📚</Text>
+      </View>
+      <Text style={[styles.noCoursesText, { color: theme.text }]}>
+        No courses found for {selectedTerm}
+      </Text>
+      <Text style={[styles.emptyStateSubtext, { color: theme.segmentText }]}>
+        Courses will appear here once you're enrolled
+      </Text>
+    </View>
+  );
+
+  const renderSummaryView = () => (
+    <View style={styles.summaryContainer}>
+      <View style={[styles.summaryCard, { backgroundColor: theme.sectionBackground }]}>
+        <Text style={[styles.summaryCardTitle, { color: theme.segmentText }]}>Current GPA</Text>
+        <Text style={[styles.summaryCardValue, { color: theme.text }]}>{gpa}</Text>
+        <View style={[styles.gpaIndicator, { backgroundColor: theme.segmentBackground }]}>
+          <View 
+            style={[
+              styles.gpaProgress, 
+              { 
+                backgroundColor: theme.avatarBackground,
+                width: `${(gpa / 4.0) * 100}%`
+              }
+            ]} 
+          />
+        </View>
+        <Text style={[styles.summaryCardRange, { color: theme.segmentText }]}>Scale: 0.0 - 4.0</Text>
+      </View>
+      
+      <View style={[styles.summaryCard, { backgroundColor: theme.sectionBackground }]}>
+        <Text style={[styles.summaryCardTitle, { color: theme.segmentText }]}>Credits Completed</Text>
+        <Text style={[styles.summaryCardValue, { color: theme.text }]}>{totalCredits}</Text>
+      </View>
+      
+      <View style={[styles.summaryCard, { backgroundColor: theme.sectionBackground }]}>
+        <Text style={[styles.summaryCardTitle, { color: theme.segmentText }]}>Academic Standing</Text>
+        <Text style={[styles.summaryCardValue, { color: theme.text }]}>
+          {gpa >= 3.5 ? "Dean's List" : gpa >= 2.0 ? "Good Standing" : "Academic Probation"}
+        </Text>
+      </View>
+    </View>
+  );
+
+  const renderModalContent = () => {
+    if (!selectedCourse) return null;
+    
+    const translateY = modalAnimation.interpolate({
+      inputRange: [0, 1],
+      outputRange: [300, 0],
+    });
+
     return (
-      <SafeAreaView style={[styles.safeContainer, { backgroundColor: theme.background }]}>
-        <View style={styles.container}>
-          <TouchableOpacity
-            style={styles.backIconContainer}
-            onPress={closeCourse}
+      <Modal transparent animationType="none" visible={!!selectedCourse}>
+        <View style={[styles.modalOverlay, { backgroundColor: theme.modalOverlay }]}>
+          <Animated.View 
+            style={[
+              styles.modalContent,
+              { 
+                backgroundColor: theme.sectionBackground,
+                transform: [{ translateY }] 
+              }
+            ]}
           >
-            <Ionicons name="chevron-back" size={28} color={theme.arrow} />
-          </TouchableOpacity>
-
-          <Text style={[styles.header, { color: theme.header }]}>Course Details</Text>
-
-          <ScrollView style={[styles.courseDetailContainer, { backgroundColor: theme.sectionBackground }]}>
-            <Text style={[styles.detailText, { color: theme.text }]}>
-              <Text style={styles.boldText}>Course: </Text>
-              {selectedCourse.course.title} ({selectedCourse.course.course_code})
-            </Text>
-            <Text style={[styles.detailText, { color: theme.text }]}>
-              <Text style={styles.boldText}>Quarter: </Text>
-              {selectedCourse.quarter}
-            </Text>
-            <Text style={[styles.detailText, { color: theme.text }]}>
-              <Text style={styles.boldText}>Section: </Text>
-              {selectedCourse.section}
-            </Text>
-            <Text style={[styles.detailText, { color: theme.text }]}>
-              <Text style={styles.boldText}>Professor: </Text>
-              {selectedCourse.professor}
-            </Text>
-            <Text style={[styles.detailText, { color: theme.text }]}>
-              <Text style={styles.boldText}>Meeting Time: </Text>
-              {selectedCourse.meeting_time}
-            </Text>
-            <Text style={[styles.detailText, { color: theme.text }]}>
-              <Text style={styles.boldText}>Grade: </Text>
-              {selectedCourse.grade || "N/A"}
-            </Text>
-          </ScrollView>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  return (
-    <SafeAreaView style={[styles.safeContainer, { backgroundColor: theme.background }]}>
-      <View style={styles.container}>
-        <Text style={[styles.header, { color: theme.header }]}>Academics</Text>
-
-        <View style={[styles.card, { backgroundColor: theme.sectionBackground }]}>
-          <Text style={[styles.gpa, { color: theme.text }]}>
-            GPA: <Text style={styles.boldText}>4.00</Text>
-          </Text>
-          <Text style={[styles.credits, { color: theme.text }]}>
-            Total Credits: <Text style={styles.boldText}>20</Text>
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          style={[styles.dropdownButton, { backgroundColor: theme.sectionBackground }]}
-          onPress={() => setShowTermModal(true)}
-        >
-          <Text style={[styles.dropdownText, { color: theme.arrow }]}>
-            {selectedTerm ? `${selectedTerm} ▼` : "Select Term"}
-          </Text>
-        </TouchableOpacity>
-
-        <Modal transparent animationType="fade" visible={showTermModal}>
-          <View style={styles.modalOverlay}>
-            <View style={[styles.modalContent, { backgroundColor: theme.sectionBackground }]}>
-              <Text style={[styles.modalHeader, { color: theme.header }]}>Select Term</Text>
-              {terms.map((option) => (
-                <TouchableOpacity
-                  key={option.key}
-                  style={styles.termOption}
-                  onPress={() => {
-                    setSelectedTerm(option.label);
-                    setShowTermModal(false);
-                  }}
-                >
-                  <Text style={[styles.termOptionText, { color: theme.arrow }]}>{option.label}</Text>
-                </TouchableOpacity>
-              ))}
-              <TouchableOpacity
-                style={[styles.closeButton, { backgroundColor: theme.arrow }]}
-                onPress={() => setShowTermModal(false)}
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalHeaderText, { color: theme.header }]}>Course Information</Text>
+              <TouchableOpacity 
+                style={styles.closeButton} 
+                onPress={closeCourse}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Text style={styles.closeButtonText}>Cancel</Text>
+                <Text style={[styles.closeButtonText, { color: theme.accent }]}>Done</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </Modal>
-
-        <ScrollView
-          style={styles.classesContainer}
-          contentContainerStyle={styles.classesContentContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          {coursesForTerm.length > 0 ? (
-            coursesForTerm.map((enrollment, index) => (
-              <TouchableOpacity
-                key={`${enrollment.enrolled_at}-${index}`}
-                style={[styles.classCard, { backgroundColor: theme.sectionBackground }]}
-                onPress={() => openCourse(enrollment)}
-              >
-                <View>
-                  <Text style={[styles.classText, { color: theme.text }]}>
-                    {enrollment.course.title} ({enrollment.course.course_code})
-                  </Text>
-                </View>
-                <Text style={[styles.grade, { color: theme.arrow }]}>
-                  {enrollment.grade || "N/A"}
+            
+            <View style={styles.modalBody}>
+              <View style={styles.modalSection}>
+                <Text style={[styles.modalLabel, { color: theme.segmentText }]}>Course</Text>
+                <Text style={[styles.modalValue, { color: theme.text }]}>
+                  {selectedCourse.course.title}
                 </Text>
-              </TouchableOpacity>
-            ))
-          ) : (
-            <Text style={[styles.noCoursesText, { color: theme.text }]}>
-              No courses found for {selectedTerm}
+                <Text style={[styles.modalSubvalue, { color: theme.segmentText }]}>
+                  {selectedCourse.course.course_code}
+                </Text>
+              </View>
+              
+              <View style={styles.modalSection}>
+                <Text style={[styles.modalLabel, { color: theme.segmentText }]}>Quarter</Text>
+                <Text style={[styles.modalValue, { color: theme.text }]}>
+                  {selectedCourse.quarter}
+                </Text>
+              </View>
+              
+              <View style={styles.modalSection}>
+                <Text style={[styles.modalLabel, { color: theme.segmentText }]}>Section</Text>
+                <Text style={[styles.modalValue, { color: theme.text }]}>
+                  {selectedCourse.section}
+                </Text>
+              </View>
+              
+              <View style={styles.modalSection}>
+                <Text style={[styles.modalLabel, { color: theme.segmentText }]}>Meeting Time</Text>
+                <Text style={[styles.modalValue, { color: theme.text }]}>
+                  {selectedCourse.meeting_time}
+                </Text>
+              </View>
+              
+              <View style={styles.modalSection}>
+                <Text style={[styles.modalLabel, { color: theme.segmentText }]}>Professor</Text>
+                <Text style={[styles.modalValue, { color: theme.text }]}>
+                  {selectedCourse.professor}
+                </Text>
+              </View>
+              
+              <View style={styles.modalSection}>
+                <Text style={[styles.modalLabel, { color: theme.segmentText }]}>Grade</Text>
+                <View style={styles.gradeRow}>
+                  <Text style={[styles.modalValue, { color: theme.text }]}>
+                    {selectedCourse.grade || "Not Graded"}
+                  </Text>
+                  {selectedCourse.grade && (
+                    <View style={[styles.gradeBadge, { backgroundColor: theme.avatarBackground }]}>
+                      <Text style={styles.gradeBadgeText}>{selectedCourse.grade}</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
+    );
+  };
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+        <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
+        <View style={[styles.headerContainer, { paddingTop: insets.top > 0 ? 8 : 16 }]}>
+          <Text style={[styles.header, { color: theme.header }]}>Academic Records</Text>
+    
+          <TouchableOpacity 
+            style={[styles.termSelector, { backgroundColor: theme.segmentBackground, borderColor: theme.cardBorder }]}
+            onPress={() => setShowTermDropdown(!showTermDropdown)}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.termSelectorText, { color: theme.text }]}>
+              {selectedTerm || "Select Term"}
             </Text>
+            <Text style={[styles.termSelectorIcon, { color: theme.segmentText }]}>▼</Text>
+          </TouchableOpacity>
+    
+          {showTermDropdown && (
+            <View style={[styles.termDropdown, { backgroundColor: theme.sectionBackground, borderColor: theme.cardBorder }]}>
+              <FlatList
+                data={terms}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[styles.termItem, { borderBottomColor: theme.divider }]}
+                    onPress={() => handleTermSelection(item.label)}
+                  >
+                    <Text style={[
+                      styles.termItemText,
+                      { color: theme.text },
+                      selectedTerm === item.label && { color: theme.accent, fontWeight: "500" }
+                    ]}>
+                      {item.label}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                keyExtractor={(item) => item.key}
+              />
+            </View>
           )}
-        </ScrollView>
-
-        <TouchableOpacity
-          style={[styles.advisorsButton, { backgroundColor: theme.arrow }]}
-          onPress={() => router.push("/advisors")}
-        >
-          <Text style={styles.advisorsButtonText}>View Advisors</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
-  );
+    
+          <SegmentedControl
+            options={viewOptions}
+            selectedValue={viewMode}
+            onValueChange={(value) => setViewMode(value as "courses" | "summary")}
+            theme={theme}
+          />
+        </View>
+    
+        <View style={{ flex: 1 }}>
+          {viewMode === "courses" && (
+            <FlatList
+              data={coursesForTerm}
+              renderItem={renderCourseItem}
+              keyExtractor={(item, index) => `${item.enrolled_at}-${index}`}
+              contentContainerStyle={[styles.listContent, { backgroundColor: theme.listBackground }]}
+              showsVerticalScrollIndicator={false}
+              ListEmptyComponent={renderEmptyState}
+              ListFooterComponent={
+                <TouchableOpacity
+                  style={[styles.advisorsButton, { backgroundColor: theme.accent }]}
+                  onPress={() => router.push("/advisors")}
+                >
+                  <Text style={styles.advisorsButtonText}>View Advisors</Text>
+                </TouchableOpacity>
+              }
+            />
+          )}
+    
+          {viewMode === "summary" && (
+            <View style={{ flex: 1 }}>
+              {renderSummaryView()}
+              <TouchableOpacity
+                style={[styles.advisorsButton, { backgroundColor: theme.accent }]}
+                onPress={() => router.push("/advisors")}
+              >
+                <Text style={styles.advisorsButtonText}>View Advisors</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+    
+        {renderModalContent()}
+      </SafeAreaView>
+    );
 };
 
 const styles = StyleSheet.create({
-  safeContainer: { flex: 1 },
   container: {
     flex: 1,
+  },
+  headerContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5EA",
+  },
+  header: {
+    fontSize: 28,
+    fontWeight: "600",
+    marginBottom: 12,
+  },
+  segmentedControlContainer: {
+    flexDirection: "row",
+    borderRadius: 8,
+    marginVertical: 10,
+    padding: 2,
+  },
+  segmentButton: {
+    flex: 1,
+    paddingVertical: 8,
     alignItems: "center",
-    paddingTop: 10,
-    paddingHorizontal: 10,
+    borderRadius: 6,
   },
-  header: { fontSize: 26, fontWeight: "600", marginBottom: 15 },
-  card: {
-    width: "90%",
-    padding: 20,
-    borderRadius: 16,
+  segmentButtonActive: {
     shadowColor: "#000",
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
-    elevation: 3,
-    marginBottom: 20,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+    elevation: 1,
   },
-  gpa: { fontSize: 22, fontWeight: "500", textAlign: "center" },
-  credits: { fontSize: 18, fontWeight: "400", textAlign: "center", marginTop: 5 },
-  boldText: { fontWeight: "700" },
-  dropdownButton: {
+  segmentButtonText: {
+    fontSize: 15,
+    fontWeight: "500",
+  },
+  termSelector: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 10,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 15,
+  },
+  termSelectorText: {
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  termSelectorIcon: {
+    fontSize: 12,
+  },
+  termDropdown: {
+    position: "absolute",
+    top: 110,
+    left: 20,
+    right: 20,
+    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 5,
+    zIndex: 2,
+    borderWidth: 1,
+    maxHeight: 200,
+  },
+  termItem: {
     paddingVertical: 12,
     paddingHorizontal: 15,
-    borderRadius: 12,
-    elevation: 3,
-    alignItems: "center",
-    marginBottom: 15,
-    width: "90%",
+    borderBottomWidth: 1,
   },
-  dropdownText: { fontSize: 20, fontWeight: "500" },
-  classesContainer: { width: "90%", flexGrow: 0 },
-  classesContentContainer: { paddingBottom: 120 },
+  termItemText: {
+    fontSize: 16,
+  },
+  listContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    paddingBottom: 100, // Space for the button at bottom
+  },
   classCard: {
+    marginVertical: 8,
+    borderRadius: 10,
+    overflow: "hidden",
+    backgroundColor: "#F5F5F7",
+  },
+  cardContent: {
+    padding: 16,
+  },
+  courseIdentifier: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  avatarContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  avatarText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  courseDetails: {
+    flex: 1,
+  },
+  classText: {
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  courseCode: {
+    fontSize: 14,
+    marginTop: 2,
+  },
+  courseInfo: {
+    paddingLeft: 52,
+  },
+  timeText: {
+    fontSize: 14,
+    marginTop: 4,
+  },
+  gradeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+  },
+  gradeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  gradeBadgeText: {
+    color: "white",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 60,
+  },
+  emptyStateIcon: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  emptyStateIconText: {
+    fontSize: 32,
+  },
+  noCoursesText: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  emptyStateSubtext: {
+    fontSize: 16,
+    textAlign: "center",
+  },
+  advisorsButtonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingBottom: Platform.OS === "ios" ? 30 : 20,
+    maxHeight: "80%",
+  },
+  modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5EA",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  modalHeaderText: {
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  closeButton: {
+    padding: 4,
+  },
+  closeButtonText: {
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  modalBody: {
+    padding: 16,
+  },
+  modalSection: {
+    marginBottom: 20,
+  },
+  modalLabel: {
+    fontSize: 14,
+    marginBottom: 6,
+  },
+  modalValue: {
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  modalSubvalue: {
+    fontSize: 14,
+    opacity: 0.6,
+    marginTop: 2,
+  },
+  gradeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  summaryContainer: {
+    padding: 16,
+    paddingBottom: 100, // Space for button
+  },
+  summaryCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
     shadowColor: "#000",
-    shadowOpacity: 0.07,
-    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     elevation: 2,
   },
-  classText: { fontSize: 18, fontWeight: "500" },
-  grade: { fontSize: 18, fontWeight: "600" },
-  noCoursesText: { fontSize: 18, textAlign: "center", marginTop: 20 },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
+  summaryCardTitle: {
+    fontSize: 16,
+    marginBottom: 8,
+  },
+  summaryCardValue: {
+    fontSize: 36,
+    fontWeight: "600",
+    marginBottom: 10,
+  },
+  summaryCardRange: {
+    fontSize: 12,
+    textAlign: "right",
+    marginTop: 5,
+  },
+  gpaIndicator: {
+    height: 8,
+    borderRadius: 4,
+    width: "100%",
+    overflow: "hidden",
+  },
+  gpaProgress: {
+    height: "100%",
+    borderRadius: 4,
+  },
+  advisorsButton: {
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 20,
+    marginHorizontal: 20,
     alignItems: "center",
   },
-  modalContent: {
-    width: "80%",
-    padding: 20,
-    borderRadius: 16,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  modalHeader: { fontSize: 22, fontWeight: "600", marginBottom: 15 },
-  termOption: { paddingVertical: 12, paddingHorizontal: 15, width: "100%", borderBottomWidth: 1, borderBottomColor: "#eee" },
-  termOptionText: { fontSize: 18, textAlign: "center" },
-  closeButton: { paddingVertical: 12, paddingHorizontal: 30, borderRadius: 12, marginTop: 20 },
-  closeButtonText: { fontSize: 18, fontWeight: "500", color: "#FFFFFF" },
-  advisorsButton: { padding: 12, borderRadius: 30, width: "95%", alignItems: "center", position: "absolute", bottom: 60, left: "5%", zIndex: 10 },
-  advisorsButtonText: { color: "#fff", textAlign: "center", fontWeight: "bold", fontSize: 18 },
-  courseDetailContainer: { width: "90%", padding: 20, borderRadius: 12, shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 10, elevation: 3 },
-  detailText: { fontSize: 18, marginBottom: 15 },
-  backIconContainer: { position: "absolute", top: 20, left: 15, zIndex: 10 },
 });
 
 export default AcademicScreen;
