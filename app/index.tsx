@@ -36,16 +36,40 @@ const LoginScreen: React.FC = () => {
   const slideAnim = React.useRef(new Animated.Value(20)).current;
 
   // -------------------------------------------------
-  // Skip login screen for development
+  // Validate any stored token on mount
   // -------------------------------------------------
   useEffect(() => {
-    const skipLogin = async () => {
-      // DEV ONLY: Bypass token check and go straight to app
-      router.replace("/(tabs)/personal");
+    const checkToken = async () => {
+      try {
+        const token = await AsyncStorage.getItem("authToken");
+        if (!token) return;
+
+        const res = await fetch(
+          "https://universe.terabytecomputing.com:3000/api/v1/profile",
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (res.ok) {
+          router.replace("/(tabs)/personal");
+          return; // short-circuit – no UI needed
+        }
+
+        // Bad token → remove it
+        await AsyncStorage.removeItem("authToken");
+      } catch (err) {
+        console.error("Token validation error:", err);
+      } finally {
+        setCheckingToken(false); // move on to login UI
+      }
     };
 
-    skipLogin();
-  }, []);
+    checkToken();
+  }, [router]);
 
   // -------------------------------------------------
   // Play entrance animation once splash finishes
