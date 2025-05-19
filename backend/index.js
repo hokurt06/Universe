@@ -40,6 +40,12 @@ const sslOptions = {
   ),
 };
 
+const LOGS_BASE = path.join(__dirname, "logs");
+
+if (!fs.existsSync(LOGS_BASE)) {
+  fs.mkdirSync(LOGS_BASE);
+}
+
 function readFileSafe(path, breakOnError, errorMessage) {
   try {
     return fs.readFileSync(path);
@@ -116,10 +122,18 @@ const advisorSchema = new mongoose.Schema(
 const userSchema = new mongoose.Schema({
   username: { type: String, unique: true, required: true },
   password_hash: { type: String, required: true },
+
+  // ---- new “profile” fields ----
+  name: { type: String, default: "" }, // Alex Johnson
+  pronouns: { type: String, default: "" }, // They/Them
+  bio: { type: String, default: "" },
+  gender: { type: String, default: "" },
+  birthday: { type: Date, default: null }, // store as Date
+  contactInfo: { type: String, default: "" },
   first_name: { type: String, required: true },
   last_name: { type: String, required: true },
   email: { type: String, unique: true, required: true },
-  role: { type: String, required: true, default: "student" },
+  role: { type: String, default: "student" },
   university: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "University",
@@ -680,6 +694,66 @@ router.get("/universities", async (req, res) => {
   }
 });
 
+// Update any editable profile fields:
+//   name, pronouns, bio, gender, birthday (string "MM/DD/YYYY" or ISO), contactInfo,
+//   and OPTIONAL universityId to switch schools.
+router.patch("/profile", authenticateToken, async (req, res) => {
+  try {
+    const allowed = [
+      "name",
+      "pronouns",
+      "bio",
+      "gender",
+      "birthday",
+      "contactInfo",
+    ];
+    const updates = {};
+
+    // copy over any allowed simple fields
+    for (let field of allowed) {
+      if (req.body[field] !== undefined) {
+        updates[field] = req.body[field];
+      }
+    }
+
+    // handle birthday → Date
+    if (updates.birthday) {
+      // attempt to parse MM/DD/YYYY or ISO
+      const parsed = new Date(updates.birthday);
+      if (isNaN(parsed)) {
+        return res.status(400).json({ message: "Invalid birthday format" });
+      }
+      updates.birthday = parsed;
+    }
+
+    // optionally change university
+    if (req.body.universityId) {
+      const uni = await University.findOne({ id: req.body.universityId });
+      if (!uni) {
+        return res.status(400).json({ message: "Unknown universityId" });
+      }
+      updates.university = uni._id;
+    }
+
+    // perform the update
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { $set: updates },
+      { new: true }
+    )
+      .populate("university")
+      .lean();
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    delete user.password_hash;
+    res.json(user);
+  } catch (err) {
+    console.error("Error updating profile:", err);
+    res.status(500).json({ message: "Could not update profile" });
+  }
+});
+
 // -------------------------------------------------
 // Mount the API Router with a Prefix & Start Server
 // -------------------------------------------------
@@ -694,6 +768,42 @@ app.use((err, req, res, next) => {
   const status = err.status || 500;
   const message = err.message || "Internal Server Error";
   res.status(status).json({ error: message });
+});
+
+app.use((req, res, next) => {
+  const start = Date.now();
+
+  // after response is sent:
+  res.on("finish", () => {
+    const status = res.statusCode;
+
+    let filename = `${status}.log`;
+
+    // yyyy-mm-dd
+    const date = new Date().toISOString().slice(0, 10);
+    const folder = path.join(LOGS_BASE, date);
+
+    // make sure today’s folder exists
+    if (!fs.existsSync(folder)) {
+      fs.mkdirSync(folder, { recursive: true });
+    }
+
+    // e.g. logs/2025-05-18/404.log
+    const filePath = path.join(folder, filename);
+
+    const entry =
+      [
+        new Date().toISOString(),
+        req.method,
+        req.originalUrl,
+        status,
+        `${Date.now() - start}ms`,
+      ].join(" ") + "\n";
+
+    fs.appendFileSync(filePath, entry);
+  });
+
+  next();
 });
 
 https.createServer(sslOptions, app).listen(PORT, "0.0.0.0", () => {
