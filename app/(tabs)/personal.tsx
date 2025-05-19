@@ -19,8 +19,7 @@ import { useThemeStore } from "../../hooks/themeStore";
 
 type UserProfile = {
   _id: string;
-  first_name: string;
-  last_name: string;
+  name: string;
   university?: {
     name: string;
   };
@@ -93,14 +92,18 @@ const PersonalScreen: React.FC = () => {
     return (
       <>
         <SafeAreaView style={{ flex: 0, backgroundColor: theme.background }} />
-        <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+        <SafeAreaView
+          style={[styles.safeArea, { backgroundColor: theme.background }]}
+        >
           <StatusBar
             barStyle={isDarkMode ? "light-content" : "dark-content"}
             backgroundColor={theme.background}
           />
           <View style={styles.containerCenter}>
             <ActivityIndicator size="large" color={"#0066CC"} />
-            <Text style={[styles.loadingText, { color: theme.text }]}>Loading Profile...</Text>
+            <Text style={[styles.loadingText, { color: theme.text }]}>
+              Loading Profile...
+            </Text>
           </View>
         </SafeAreaView>
       </>
@@ -110,71 +113,125 @@ const PersonalScreen: React.FC = () => {
   return (
     <>
       <SafeAreaView style={{ flex: 0, backgroundColor: theme.background }} />
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+      <SafeAreaView
+        style={[styles.safeArea, { backgroundColor: theme.background }]}
+      >
         <StatusBar
           barStyle={isDarkMode ? "light-content" : "dark-content"}
           backgroundColor={theme.background}
         />
-        <View style={[styles.headerContainer, { paddingTop: insets.top > 0 ? 8 : 16 }]}>
+        <View
+          style={[
+            styles.headerContainer,
+            { paddingTop: insets.top > 0 ? 8 : 16 },
+          ]}
+        >
           <Text style={[styles.header, { color: theme.header }]}>Profile</Text>
         </View>
         <ScrollView showsVerticalScrollIndicator={false}>
-          <View style={[styles.profileContainer, { backgroundColor: theme.sectionBackground }]}>
+          <View
+            style={[
+              styles.profileContainer,
+              { backgroundColor: theme.sectionBackground },
+            ]}
+          >
             <View style={styles.blankProfileIcon} />
             <View style={styles.profileDetails}>
               <Text style={[styles.name, { color: theme.text }]}>
-                {user.first_name} {user.last_name}
+                {user.name}
               </Text>
               <Text style={[styles.university, { color: theme.text }]}>
                 {user.university?.name || "University Not Set"}
               </Text>
               <View style={styles.idRow}>
-                <Text style={[styles.userId, { color: theme.text }]}>ID: {user._id}</Text>
-                <TouchableOpacity onPress={handleCopyId} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                  <Text style={[styles.copyButton, { color: "#0066CC" }]}>Copy</Text>
+                <Text style={[styles.userId, { color: theme.text }]}>
+                  ID: {user._id}
+                </Text>
+                <TouchableOpacity
+                  onPress={handleCopyId}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Text style={[styles.copyButton, { color: "#0066CC" }]}>
+                    Copy
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
           </View>
 
-          <View style={[styles.section, { backgroundColor: theme.sectionBackground }]}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>Preferences</Text>
+          <View
+            style={[
+              styles.section,
+              { backgroundColor: theme.sectionBackground },
+            ]}
+          >
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+              Preferences
+            </Text>
             <View style={styles.settingRow}>
-              <Text style={[styles.settingText, { color: theme.text }]}>Enable Notifications</Text>
+              <Text style={[styles.settingText, { color: theme.text }]}>
+                Enable Notifications
+              </Text>
               <Switch
                 value={notificationsEnabled}
                 onValueChange={setNotificationsEnabled}
                 trackColor={{ false: "#E5E5EA", true: "#0066CC" }}
-                thumbColor={Platform.OS === 'ios' ? undefined : "#FFFFFF"}
+                thumbColor={Platform.OS === "ios" ? undefined : "#FFFFFF"}
               />
             </View>
             <View style={styles.settingRow}>
-              <Text style={[styles.settingText, { color: theme.text }]}>Dark Mode</Text>
+              <Text style={[styles.settingText, { color: theme.text }]}>
+                Dark Mode
+              </Text>
               <Switch
                 value={isDarkMode}
                 onValueChange={toggleDarkMode}
                 trackColor={{ false: "#E5E5EA", true: "#0066CC" }}
-                thumbColor={Platform.OS === 'ios' ? undefined : "#FFFFFF"}
+                thumbColor={Platform.OS === "ios" ? undefined : "#FFFFFF"}
               />
             </View>
           </View>
 
-          <View style={[styles.section, { backgroundColor: theme.sectionBackground }]}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>Account</Text>
-            {["Edit Profile", "Change Password", "Privacy Settings"].map((item, index) => (
-              <TouchableOpacity key={index} style={styles.settingRow}>
-                <Text style={[styles.settingText, { color: theme.text }]}>{item}</Text>
-                <Text style={{ fontSize: 16, color: theme.arrow }}>→</Text>
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity style={styles.settingRow} onPress={() => router.push("/maps")}>
-              <Text style={[styles.settingText, { color: theme.text }]}>Maps</Text>
+          <View
+            style={[
+              styles.section,
+              { backgroundColor: theme.sectionBackground },
+            ]}
+          >
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+              Account
+            </Text>
+            {["Edit Profile", "Change Password", "Privacy Settings"].map(
+              (item, index) => (
+                <TouchableOpacity key={index} style={styles.settingRow}>
+                  <Text style={[styles.settingText, { color: theme.text }]}>
+                    {item}
+                  </Text>
+                  <Text style={{ fontSize: 16, color: theme.arrow }}>→</Text>
+                </TouchableOpacity>
+              )
+            )}
+            <TouchableOpacity
+              style={styles.settingRow}
+              onPress={() => router.push("/maps")}
+            >
+              <Text style={[styles.settingText, { color: theme.text }]}>
+                Maps
+              </Text>
               <Text style={{ fontSize: 16, color: theme.arrow }}>→</Text>
             </TouchableOpacity>
           </View>
 
-          <View style={[styles.logoutSection, { backgroundColor: theme.sectionBackground }]}>
-            <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+          <View
+            style={[
+              styles.logoutSection,
+              { backgroundColor: theme.sectionBackground },
+            ]}
+          >
+            <TouchableOpacity
+              onPress={handleLogout}
+              style={styles.logoutButton}
+            >
               <Text style={[styles.logoutText]}>Log Out</Text>
             </TouchableOpacity>
           </View>
@@ -187,24 +244,65 @@ const PersonalScreen: React.FC = () => {
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   containerCenter: { flex: 1, justifyContent: "center", alignItems: "center" },
-  headerContainer: { paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#E5E5EA" },
+  headerContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#E5E5EA",
+  },
   header: { fontSize: 28, fontWeight: "600" },
   loadingText: { marginTop: 12, fontSize: 16, fontWeight: "500" },
-  profileContainer: { flexDirection: "row", padding: 16, borderRadius: 10, alignItems: "center", marginHorizontal: 16, marginVertical: 16 },
-  blankProfileIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: "#D1D1D6", marginRight: 16 },
+  profileContainer: {
+    flexDirection: "row",
+    padding: 16,
+    borderRadius: 10,
+    alignItems: "center",
+    marginHorizontal: 16,
+    marginVertical: 16,
+  },
+  blankProfileIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#D1D1D6",
+    marginRight: 16,
+  },
   profileDetails: { flex: 1 },
   name: { fontSize: 18, fontWeight: "600" },
   university: { fontSize: 16, marginTop: 4 },
   idRow: { flexDirection: "row", alignItems: "center", marginTop: 8 },
   userId: { fontSize: 14 },
   copyButton: { marginLeft: 8, fontSize: 14, fontWeight: "500" },
-  section: { borderRadius: 10, padding: 16, marginHorizontal: 16, marginBottom: 16 },
+  section: {
+    borderRadius: 10,
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
   sectionTitle: { fontSize: 16, fontWeight: "600", marginBottom: 12 },
-  settingRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#E5E5EA" },
+  settingRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#E5E5EA",
+  },
   settingText: { fontSize: 16 },
-  logoutSection: { borderRadius: 10, padding: 16, marginHorizontal: 16, marginBottom: 24, alignItems: "center" },
+  logoutSection: {
+    borderRadius: 10,
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 24,
+    alignItems: "center",
+  },
   logoutButton: { width: "100%", paddingVertical: 12 },
-  logoutText: { fontSize: 16, color: "#FF3B30", fontWeight: "600", textAlign: "center" },
+  logoutText: {
+    fontSize: 16,
+    color: "#FF3B30",
+    fontWeight: "600",
+    textAlign: "center",
+  },
 });
 
 export default PersonalScreen;
