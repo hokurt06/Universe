@@ -87,17 +87,18 @@ const AcademicScreen: React.FC = () => {
         background: "#121212",
         text: "#FFFFFF",
         header: "#FFFFFF",
-        sectionBackground: "#2C2C2C",
-        divider: "#444",
+        sectionBackground: "#2A2A2A",
+        divider: "#3E3E3E",
         accent: "#0A84FF",
-        cardBorder: "#3A3A3C",
+        cardBorder: "#3A3A3A",
         avatarBackground: "#0A84FF",
-        segmentBackground: "#2C2C2C",
-        segmentText: "#8E8E93",
+        segmentBackground: "#2C2C2E",
+        segmentText: "#D3D3D3",
         segmentActiveBackground: "#3A3A3C",
         segmentActiveText: "#FFFFFF",
         listBackground: "#121212",
-        modalOverlay: "rgba(0,0,0,0.7)",
+        modalOverlay: "rgba(28,28,30,0.9)",
+        cardTitle: "#FFFFFF", 
       }
     : {
         background: "#F9F9F9",
@@ -109,12 +110,15 @@ const AcademicScreen: React.FC = () => {
         cardBorder: "#E5E5EA",
         avatarBackground: "#007AFF",
         segmentBackground: "#F2F2F7",
-        segmentText: "#8E8E93",
+        segmentText: "#696969",
         segmentActiveBackground: "#FFFFFF",
         segmentActiveText: "#1C1C1E",
         listBackground: "#F9F9F9",
         modalOverlay: "rgba(0,0,0,0.5)",
+        cardTitle: "#000000", 
       };
+
+
 
   useEffect(() => {
     const fetchTerms = async () => {
@@ -266,7 +270,7 @@ const AcademicScreen: React.FC = () => {
           </View>
           <View style={styles.courseDetails}>
             <Text
-              style={[styles.classText, { color: theme.text }]}
+              style={[styles.classText, { color: theme.cardTitle }]}
               numberOfLines={1}
             >
               {item.course.title}
@@ -713,13 +717,13 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    paddingBottom: 100, // Space for the button at bottom
+    paddingBottom: 100, 
   },
   classCard: {
     marginVertical: 8,
     borderRadius: 10,
     overflow: "hidden",
-    backgroundColor: "#F5F5F7",
+    backgroundColor: "#2C2C2E",
   },
   cardContent: {
     padding: 16,
