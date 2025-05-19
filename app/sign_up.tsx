@@ -84,17 +84,7 @@ const SignUpScreen = () => {
   };
 
   const handleRegister = async () => {
-    const nameParts = name.trim().split(" ");
-    const firstName = nameParts[0] || "";
-    const lastName = nameParts.slice(1).join(" ") || "";
-
-    if (
-      !name || // Check for name instead of firstName and lastName
-      !username ||
-      !email ||
-      !password ||
-      !selectedUniversity
-    ) {
+    if (!name || !username || !email || !password || !selectedUniversity) {
       Alert.alert(
         "Error",
         "Please fill in all fields and select a university."
@@ -110,8 +100,7 @@ const SignUpScreen = () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            first_name: firstName, // Use split firstName
-            last_name: lastName, // Use split lastName
+            name: name,
             username,
             password,
             email,
@@ -178,7 +167,7 @@ const SignUpScreen = () => {
 
           <View style={styles.formContainer}>
             {[
-              { label: "Name", value: name, setter: setName }, // Changed from First Name and Last Name
+              { label: "Name", value: name, setter: setName },
               { label: "Username", value: username, setter: setUsername },
               { label: "Email", value: email, setter: setEmail },
             ].map((field, i) => (

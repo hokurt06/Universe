@@ -124,14 +124,14 @@ const userSchema = new mongoose.Schema({
   password_hash: { type: String, required: true },
 
   // ---- new “profile” fields ----
-  name: { type: String, default: "" }, // Alex Johnson
+  name: { type: String, default: "", required: true }, // Alex Johnson
   pronouns: { type: String, default: "" }, // They/Them
   bio: { type: String, default: "" },
   gender: { type: String, default: "" },
   birthday: { type: Date, default: null }, // store as Date
   contactInfo: { type: String, default: "" },
-  first_name: { type: String, required: true },
-  last_name: { type: String, required: true },
+  first_name: { type: String },
+  last_name: { type: String },
   email: { type: String, unique: true, required: true },
   role: { type: String, default: "student" },
   university: {
@@ -288,6 +288,8 @@ function requireFields(fields) {
         req.body[field] === ""
     );
     if (missing.length > 0) {
+      console.log(`Missing fields: ${missing.join(", ")}`);
+      console.log(`Received fields: ${Object.values(req.body).join(", ")}`);
       return res.status(400).json({
         message: "Missing required fields",
         missing_fields: missing,
@@ -318,24 +320,10 @@ const router = express.Router();
 // ----- User Registration & Login -----
 router.post(
   "/register",
-  requireFields([
-    "username",
-    "password",
-    "first_name",
-    "last_name",
-    "email",
-    "universityId",
-  ]),
+  requireFields(["username", "password", "name", "email", "universityId"]),
   async (req, res) => {
-    const {
-      username,
-      password,
-      first_name,
-      last_name,
-      email,
-      role,
-      universityId,
-    } = req.body;
+    // log all fields received
+    const { username, password, name, email, role, universityId } = req.body;
     try {
       // Look up the university based on the provided universityId.
       const universityDoc = await University.findOne({ id: universityId });
@@ -350,8 +338,7 @@ router.post(
       const user = new User({
         username,
         password_hash,
-        first_name,
-        last_name,
+        name,
         email,
         role: role || "student",
         university: universityDoc._id, // assign the ObjectId reference from the University document
