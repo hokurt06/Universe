@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react"; // Import useCallback
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
   Platform,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router"; // Import useFocusEffect
 import * as Clipboard from "expo-clipboard";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useThemeStore } from "../../hooks/themeStore";
@@ -33,33 +33,39 @@ const PersonalScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { isDarkMode, toggleDarkMode } = useThemeStore();
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        setIsLoading(true);
-        const token = await AsyncStorage.getItem("authToken");
-        if (token) {
-          const response = await fetch(
-            "https://universe.terabytecomputing.com:3000/api/v1/profile",
-            {
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-          const data = await response.json();
-          if (data) setUser(data);
+  const fetchProfile = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const token = await AsyncStorage.getItem("authToken");
+      if (token) {
+        const response = await fetch(
+          "https://universe.terabytecomputing.com:3000/api/v1/profile",
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        const data = await response.json();
+        if (response.ok) {
+          setUser(data);
+        } else {
+          console.error("Error fetching profile:", data);
         }
-      } catch (error) {
-        console.error("Error fetching profile:", error);
-      } finally {
-        setIsLoading(false);
       }
-    };
-
-    fetchProfile();
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchProfile();
+    }, [fetchProfile])
+  );
 
   const handleLogout = async () => {
     await AsyncStorage.removeItem("authToken");

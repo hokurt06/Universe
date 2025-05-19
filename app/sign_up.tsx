@@ -26,8 +26,7 @@ interface University {
 const SignUpScreen = () => {
   const router = useRouter();
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [name, setName] = useState(""); // New state for combined name
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -35,7 +34,8 @@ const SignUpScreen = () => {
 
   const [universities, setUniversities] = useState<University[]>([]);
   const [search, setSearch] = useState("");
-  const [selectedUniversity, setSelectedUniversity] = useState<University | null>(null);
+  const [selectedUniversity, setSelectedUniversity] =
+    useState<University | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [uniLoading, setUniLoading] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -50,8 +50,8 @@ const SignUpScreen = () => {
         );
         const json = await res.json();
         if (res.ok && json?.universities) {
-          const sorted: University[] = json.universities.sort((a: University, b: University) =>
-            a.name.localeCompare(b.name)
+          const sorted: University[] = json.universities.sort(
+            (a: University, b: University) => a.name.localeCompare(b.name)
           );
           setUniversities(sorted);
         } else {
@@ -84,15 +84,21 @@ const SignUpScreen = () => {
   };
 
   const handleRegister = async () => {
+    const nameParts = name.trim().split(" ");
+    const firstName = nameParts[0] || "";
+    const lastName = nameParts.slice(1).join(" ") || "";
+
     if (
-      !firstName ||
-      !lastName ||
+      !name || // Check for name instead of firstName and lastName
       !username ||
       !email ||
       !password ||
       !selectedUniversity
     ) {
-      Alert.alert("Error", "Please fill in all fields and select a university.");
+      Alert.alert(
+        "Error",
+        "Please fill in all fields and select a university."
+      );
       return;
     }
 
@@ -104,8 +110,8 @@ const SignUpScreen = () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            first_name: firstName,
-            last_name: lastName,
+            first_name: firstName, // Use split firstName
+            last_name: lastName, // Use split lastName
             username,
             password,
             email,
@@ -144,7 +150,10 @@ const SignUpScreen = () => {
         await AsyncStorage.setItem("authToken", loginData.token);
         router.replace("/(tabs)/personal");
       } else {
-        Alert.alert("Almost there!", "Account created. Please sign in manually.");
+        Alert.alert(
+          "Almost there!",
+          "Account created. Please sign in manually."
+        );
         router.replace("/");
       }
     } catch (error) {
@@ -163,13 +172,16 @@ const SignUpScreen = () => {
       >
         <View style={styles.contentContainer}>
           <Text style={styles.title}>Create an account</Text>
-          <Text style={styles.subtitle}>Fill in your details to get started</Text>
+          <Text style={styles.subtitle}>
+            Fill in your details to get started
+          </Text>
 
           <View style={styles.formContainer}>
-            {[{ label: "First Name", value: firstName, setter: setFirstName },
-              { label: "Last Name", value: lastName, setter: setLastName },
+            {[
+              { label: "Name", value: name, setter: setName }, // Changed from First Name and Last Name
               { label: "Username", value: username, setter: setUsername },
-              { label: "Email", value: email, setter: setEmail }].map((field, i) => (
+              { label: "Email", value: email, setter: setEmail },
+            ].map((field, i) => (
               <View key={i}>
                 <Text style={styles.inputLabel}>{field.label}</Text>
                 <TextInput
@@ -193,8 +205,14 @@ const SignUpScreen = () => {
                 secureTextEntry={!passwordVisible}
                 editable={!loading}
               />
-              <TouchableOpacity onPress={() => setPasswordVisible(!passwordVisible)}>
-                <Ionicons name={passwordVisible ? "eye" : "eye-off"} size={22} color="#86868B" />
+              <TouchableOpacity
+                onPress={() => setPasswordVisible(!passwordVisible)}
+              >
+                <Ionicons
+                  name={passwordVisible ? "eye" : "eye-off"}
+                  size={22}
+                  color="#86868B"
+                />
               </TouchableOpacity>
             </View>
 
@@ -209,7 +227,10 @@ const SignUpScreen = () => {
                   value={search}
                   onChangeText={(text) => {
                     setSearch(text);
-                    if (selectedUniversity && text !== selectedUniversity.name) {
+                    if (
+                      selectedUniversity &&
+                      text !== selectedUniversity.name
+                    ) {
                       setSelectedUniversity(null);
                     }
                     setShowDropdown(true);
@@ -237,7 +258,10 @@ const SignUpScreen = () => {
             )}
 
             <TouchableOpacity
-              style={[styles.signInButton, loading ? styles.buttonDisabled : styles.signInButtonActive]}
+              style={[
+                styles.signInButton,
+                loading ? styles.buttonDisabled : styles.signInButtonActive,
+              ]}
               onPress={handleRegister}
               disabled={loading}
             >
@@ -252,7 +276,8 @@ const SignUpScreen = () => {
           <View style={styles.bottomContainer}>
             <TouchableOpacity onPress={() => router.push("/")}>
               <Text style={styles.bottomText}>
-                Already have an account? <Text style={styles.signUpLink}>Sign in</Text>
+                Already have an account?{" "}
+                <Text style={styles.signUpLink}>Sign in</Text>
               </Text>
             </TouchableOpacity>
           </View>
