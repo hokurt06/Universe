@@ -207,16 +207,23 @@ const PersonalScreen: React.FC = () => {
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
               Account
             </Text>
-            {["Edit Profile", "Change Password", "Privacy Settings"].map(
-              (item, index) => (
-                <TouchableOpacity key={index} style={styles.settingRow}>
-                  <Text style={[styles.settingText, { color: theme.text }]}>
-                    {item}
-                  </Text>
-                  <Text style={{ fontSize: 16, color: theme.arrow }}>→</Text>
-                </TouchableOpacity>
-              )
-            )}
+            <TouchableOpacity
+              style={styles.settingRow}
+              onPress={() => router.push("/edit-profile")}
+            >
+              <Text style={[styles.settingText, { color: theme.text }]}>Edit Profile</Text>
+              <Text style={{ fontSize: 16, color: theme.arrow }}>→</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.settingRow}>
+              <Text style={[styles.settingText, { color: theme.text }]}>Change Password</Text>
+              <Text style={{ fontSize: 16, color: theme.arrow }}>→</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.settingRow}>
+              <Text style={[styles.settingText, { color: theme.text }]}>Privacy Settings</Text>
+              <Text style={{ fontSize: 16, color: theme.arrow }}>→</Text>
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.settingRow}
               onPress={() => router.push("/maps")}
