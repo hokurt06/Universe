@@ -24,13 +24,23 @@ const SegmentedControl: React.FC<{
   theme: any;
 }> = ({ options, selectedValue, onValueChange, theme }) => {
   return (
-    <View style={[styles.segmentedControlContainer, { backgroundColor: theme.segmentBackground }]}>
+    <View
+      style={[
+        styles.segmentedControlContainer,
+        { backgroundColor: theme.segmentBackground },
+      ]}
+    >
       {options.map((option) => (
         <TouchableOpacity
           key={option.key}
           style={[
             styles.segmentButton,
-            selectedValue === option.key ? [styles.segmentButtonActive, { backgroundColor: theme.segmentActiveBackground }] : null,
+            selectedValue === option.key
+              ? [
+                  styles.segmentButtonActive,
+                  { backgroundColor: theme.segmentActiveBackground },
+                ]
+              : null,
           ]}
           onPress={() => onValueChange(option.key)}
           activeOpacity={0.8}
@@ -39,7 +49,9 @@ const SegmentedControl: React.FC<{
             style={[
               styles.segmentButtonText,
               { color: theme.segmentText },
-              selectedValue === option.key ? { color: theme.segmentActiveText } : null,
+              selectedValue === option.key
+                ? { color: theme.segmentActiveText }
+                : null,
             ]}
           >
             {option.label}
@@ -57,10 +69,10 @@ const AcademicScreen: React.FC = () => {
   const [courses, setCourses] = useState<any[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
   const [viewMode, setViewMode] = useState<"courses" | "summary">("courses");
-  
+
   const modalAnimation = useRef(new Animated.Value(0)).current;
   const fadeAnimation = useRef(new Animated.Value(1)).current;
-  
+
   const { isDarkMode } = useThemeStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -171,7 +183,7 @@ const AcademicScreen: React.FC = () => {
 
   const openCourse = (course: any) => {
     setSelectedCourse(course);
-    
+
     Animated.timing(modalAnimation, {
       toValue: 1,
       duration: 300,
@@ -197,29 +209,38 @@ const AcademicScreen: React.FC = () => {
   // Calculate GPA and total credits
   const calculateAcademicSummary = () => {
     if (courses.length === 0) return { gpa: 0, totalCredits: 0 };
-    
-    const completedCourses = courses.filter(course => course.grade);
-    
+
+    const completedCourses = courses.filter((course) => course.grade);
+
     if (completedCourses.length === 0) return { gpa: 0, totalCredits: 0 };
-    
-    const gradePoints: { [key: string]: number } = {
-      'A+': 4.0, 'A': 4.0, 'A-': 3.7,
-      'B+': 3.3, 'B': 3.0, 'B-': 2.7,
-      'C+': 2.3, 'C': 2.0, 'C-': 1.7,
-      'D+': 1.3, 'D': 1.0, 'D-': 0.7,
-      'F': 0.0
+
+    const gradePoints = (grade: number): number => {
+      if (grade >= 93) return 4.0;
+      if (grade >= 90) return 3.7;
+      if (grade >= 87) return 3.3;
+      if (grade >= 83) return 3.0;
+      if (grade >= 80) return 2.7;
+      if (grade >= 77) return 2.3;
+      if (grade >= 73) return 2.0;
+      if (grade >= 70) return 1.7;
+      if (grade >= 67) return 1.3;
+      if (grade >= 63) return 1.0;
+      if (grade >= 60) return 0.7;
+      return 0.0;
     };
-    
-    const totalCredits = completedCourses.reduce((sum, course) => 
-      sum + (course.credits || 0), 0);
-    
+
+    const totalCredits = completedCourses.reduce(
+      (sum, course) => sum + (course.course.credits || 0),
+      0
+    );
+
     const totalPoints = completedCourses.reduce((sum, course) => {
-      const points = course.grade ? (gradePoints[course.grade] || 0) : 0;
-      return sum + points * (course.credits || 0);
+      const points = course.grade ? gradePoints(course.grade) || 0 : 0;
+      return sum + points * (course.course.credits || 0);
     }, 0);
-    
+
     const gpa = totalPoints / totalCredits || 0;
-    
+
     return { gpa: parseFloat(gpa.toFixed(2)), totalCredits };
   };
 
@@ -233,13 +254,21 @@ const AcademicScreen: React.FC = () => {
     >
       <View style={styles.cardContent}>
         <View style={styles.courseIdentifier}>
-          <View style={[styles.avatarContainer, { backgroundColor: theme.avatarBackground }]}>
+          <View
+            style={[
+              styles.avatarContainer,
+              { backgroundColor: theme.avatarBackground },
+            ]}
+          >
             <Text style={styles.avatarText}>
               {item.course.course_code.substring(0, 1)}
             </Text>
           </View>
           <View style={styles.courseDetails}>
-            <Text style={[styles.classText, { color: theme.text }]} numberOfLines={1}>
+            <Text
+              style={[styles.classText, { color: theme.text }]}
+              numberOfLines={1}
+            >
               {item.course.title}
             </Text>
             <Text style={[styles.courseCode, { color: theme.segmentText }]}>
@@ -259,7 +288,12 @@ const AcademicScreen: React.FC = () => {
               <Text style={[styles.timeText, { color: theme.segmentText }]}>
                 Grade:
               </Text>
-              <View style={[styles.gradeBadge, { backgroundColor: theme.avatarBackground }]}>
+              <View
+                style={[
+                  styles.gradeBadge,
+                  { backgroundColor: theme.avatarBackground },
+                ]}
+              >
                 <Text style={styles.gradeBadgeText}>{item.grade}</Text>
               </View>
             </View>
@@ -271,7 +305,12 @@ const AcademicScreen: React.FC = () => {
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
-      <View style={[styles.emptyStateIcon, { backgroundColor: theme.segmentBackground }]}>
+      <View
+        style={[
+          styles.emptyStateIcon,
+          { backgroundColor: theme.segmentBackground },
+        ]}
+      >
         <Text style={styles.emptyStateIconText}>📚</Text>
       </View>
       <Text style={[styles.noCoursesText, { color: theme.text }]}>
@@ -285,32 +324,68 @@ const AcademicScreen: React.FC = () => {
 
   const renderSummaryView = () => (
     <View style={styles.summaryContainer}>
-      <View style={[styles.summaryCard, { backgroundColor: theme.sectionBackground }]}>
-        <Text style={[styles.summaryCardTitle, { color: theme.segmentText }]}>Current GPA</Text>
-        <Text style={[styles.summaryCardValue, { color: theme.text }]}>{gpa}</Text>
-        <View style={[styles.gpaIndicator, { backgroundColor: theme.segmentBackground }]}>
-          <View 
+      <View
+        style={[
+          styles.summaryCard,
+          { backgroundColor: theme.sectionBackground },
+        ]}
+      >
+        <Text style={[styles.summaryCardTitle, { color: theme.segmentText }]}>
+          Current GPA
+        </Text>
+        <Text style={[styles.summaryCardValue, { color: theme.text }]}>
+          {gpa}
+        </Text>
+        <View
+          style={[
+            styles.gpaIndicator,
+            { backgroundColor: theme.segmentBackground },
+          ]}
+        >
+          <View
             style={[
-              styles.gpaProgress, 
-              { 
+              styles.gpaProgress,
+              {
                 backgroundColor: theme.avatarBackground,
-                width: `${(gpa / 4.0) * 100}%`
-              }
-            ]} 
+                width: `${(gpa / 4.0) * 100}%`,
+              },
+            ]}
           />
         </View>
-        <Text style={[styles.summaryCardRange, { color: theme.segmentText }]}>Scale: 0.0 - 4.0</Text>
+        <Text style={[styles.summaryCardRange, { color: theme.segmentText }]}>
+          Scale: 0.0 - 4.0
+        </Text>
       </View>
-      
-      <View style={[styles.summaryCard, { backgroundColor: theme.sectionBackground }]}>
-        <Text style={[styles.summaryCardTitle, { color: theme.segmentText }]}>Credits Completed</Text>
-        <Text style={[styles.summaryCardValue, { color: theme.text }]}>{totalCredits}</Text>
-      </View>
-      
-      <View style={[styles.summaryCard, { backgroundColor: theme.sectionBackground }]}>
-        <Text style={[styles.summaryCardTitle, { color: theme.segmentText }]}>Academic Standing</Text>
+
+      <View
+        style={[
+          styles.summaryCard,
+          { backgroundColor: theme.sectionBackground },
+        ]}
+      >
+        <Text style={[styles.summaryCardTitle, { color: theme.segmentText }]}>
+          Credits Completed
+        </Text>
         <Text style={[styles.summaryCardValue, { color: theme.text }]}>
-          {gpa >= 3.5 ? "Dean's List" : gpa >= 2.0 ? "Good Standing" : "Academic Probation"}
+          {totalCredits}
+        </Text>
+      </View>
+
+      <View
+        style={[
+          styles.summaryCard,
+          { backgroundColor: theme.sectionBackground },
+        ]}
+      >
+        <Text style={[styles.summaryCardTitle, { color: theme.segmentText }]}>
+          Academic Standing
+        </Text>
+        <Text style={[styles.summaryCardValue, { color: theme.text }]}>
+          {gpa >= 3.5
+            ? "Dean's List"
+            : gpa >= 2.0
+            ? "Good Standing"
+            : "Academic Probation"}
         </Text>
       </View>
     </View>
@@ -318,7 +393,7 @@ const AcademicScreen: React.FC = () => {
 
   const renderModalContent = () => {
     if (!selectedCourse) return null;
-    
+
     const translateY = modalAnimation.interpolate({
       inputRange: [0, 1],
       outputRange: [300, 0],
@@ -326,75 +401,102 @@ const AcademicScreen: React.FC = () => {
 
     return (
       <Modal transparent animationType="none" visible={!!selectedCourse}>
-        <View style={[styles.modalOverlay, { backgroundColor: theme.modalOverlay }]}>
-          <Animated.View 
+        <View
+          style={[styles.modalOverlay, { backgroundColor: theme.modalOverlay }]}
+        >
+          <Animated.View
             style={[
               styles.modalContent,
-              { 
+              {
                 backgroundColor: theme.sectionBackground,
-                transform: [{ translateY }] 
-              }
+                transform: [{ translateY }],
+              },
             ]}
           >
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalHeaderText, { color: theme.header }]}>Course Information</Text>
-              <TouchableOpacity 
-                style={styles.closeButton} 
+              <Text style={[styles.modalHeaderText, { color: theme.header }]}>
+                Course Information
+              </Text>
+              <TouchableOpacity
+                style={styles.closeButton}
                 onPress={closeCourse}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Text style={[styles.closeButtonText, { color: theme.accent }]}>Done</Text>
+                <Text style={[styles.closeButtonText, { color: theme.accent }]}>
+                  Done
+                </Text>
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.modalBody}>
               <View style={styles.modalSection}>
-                <Text style={[styles.modalLabel, { color: theme.segmentText }]}>Course</Text>
+                <Text style={[styles.modalLabel, { color: theme.segmentText }]}>
+                  Course
+                </Text>
                 <Text style={[styles.modalValue, { color: theme.text }]}>
                   {selectedCourse.course.title}
                 </Text>
-                <Text style={[styles.modalSubvalue, { color: theme.segmentText }]}>
+                <Text
+                  style={[styles.modalSubvalue, { color: theme.segmentText }]}
+                >
                   {selectedCourse.course.course_code}
                 </Text>
               </View>
-              
+
               <View style={styles.modalSection}>
-                <Text style={[styles.modalLabel, { color: theme.segmentText }]}>Quarter</Text>
+                <Text style={[styles.modalLabel, { color: theme.segmentText }]}>
+                  Quarter
+                </Text>
                 <Text style={[styles.modalValue, { color: theme.text }]}>
                   {selectedCourse.quarter}
                 </Text>
               </View>
-              
+
               <View style={styles.modalSection}>
-                <Text style={[styles.modalLabel, { color: theme.segmentText }]}>Section</Text>
+                <Text style={[styles.modalLabel, { color: theme.segmentText }]}>
+                  Section
+                </Text>
                 <Text style={[styles.modalValue, { color: theme.text }]}>
                   {selectedCourse.section}
                 </Text>
               </View>
-              
+
               <View style={styles.modalSection}>
-                <Text style={[styles.modalLabel, { color: theme.segmentText }]}>Meeting Time</Text>
+                <Text style={[styles.modalLabel, { color: theme.segmentText }]}>
+                  Meeting Time
+                </Text>
                 <Text style={[styles.modalValue, { color: theme.text }]}>
                   {selectedCourse.meeting_time}
                 </Text>
               </View>
-              
+
               <View style={styles.modalSection}>
-                <Text style={[styles.modalLabel, { color: theme.segmentText }]}>Professor</Text>
+                <Text style={[styles.modalLabel, { color: theme.segmentText }]}>
+                  Professor
+                </Text>
                 <Text style={[styles.modalValue, { color: theme.text }]}>
                   {selectedCourse.professor}
                 </Text>
               </View>
-              
+
               <View style={styles.modalSection}>
-                <Text style={[styles.modalLabel, { color: theme.segmentText }]}>Grade</Text>
+                <Text style={[styles.modalLabel, { color: theme.segmentText }]}>
+                  Grade
+                </Text>
                 <View style={styles.gradeRow}>
                   <Text style={[styles.modalValue, { color: theme.text }]}>
                     {selectedCourse.grade || "Not Graded"}
                   </Text>
                   {selectedCourse.grade && (
-                    <View style={[styles.gradeBadge, { backgroundColor: theme.avatarBackground }]}>
-                      <Text style={styles.gradeBadgeText}>{selectedCourse.grade}</Text>
+                    <View
+                      style={[
+                        styles.gradeBadge,
+                        { backgroundColor: theme.avatarBackground },
+                      ]}
+                    >
+                      <Text style={styles.gradeBadgeText}>
+                        {selectedCourse.grade}
+                      </Text>
                     </View>
                   )}
                 </View>
@@ -405,90 +507,129 @@ const AcademicScreen: React.FC = () => {
       </Modal>
     );
   };
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-        <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
-        <View style={[styles.headerContainer, { paddingTop: insets.top > 0 ? 8 : 16 }]}>
-          <Text style={[styles.header, { color: theme.header }]}>Academic Records</Text>
-    
-          <TouchableOpacity 
-            style={[styles.termSelector, { backgroundColor: theme.segmentBackground, borderColor: theme.cardBorder }]}
-            onPress={() => setShowTermDropdown(!showTermDropdown)}
-            activeOpacity={0.7}
+  return (
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.background }]}
+    >
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
+      <View
+        style={[
+          styles.headerContainer,
+          { paddingTop: insets.top > 0 ? 8 : 16 },
+        ]}
+      >
+        <Text style={[styles.header, { color: theme.header }]}>
+          Academic Records
+        </Text>
+
+        <TouchableOpacity
+          style={[
+            styles.termSelector,
+            {
+              backgroundColor: theme.segmentBackground,
+              borderColor: theme.cardBorder,
+            },
+          ]}
+          onPress={() => setShowTermDropdown(!showTermDropdown)}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.termSelectorText, { color: theme.text }]}>
+            {selectedTerm || "Select Term"}
+          </Text>
+          <Text style={[styles.termSelectorIcon, { color: theme.segmentText }]}>
+            ▼
+          </Text>
+        </TouchableOpacity>
+
+        {showTermDropdown && (
+          <View
+            style={[
+              styles.termDropdown,
+              {
+                backgroundColor: theme.sectionBackground,
+                borderColor: theme.cardBorder,
+              },
+            ]}
           >
-            <Text style={[styles.termSelectorText, { color: theme.text }]}>
-              {selectedTerm || "Select Term"}
-            </Text>
-            <Text style={[styles.termSelectorIcon, { color: theme.segmentText }]}>▼</Text>
-          </TouchableOpacity>
-    
-          {showTermDropdown && (
-            <View style={[styles.termDropdown, { backgroundColor: theme.sectionBackground, borderColor: theme.cardBorder }]}>
-              <FlatList
-                data={terms}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={[styles.termItem, { borderBottomColor: theme.divider }]}
-                    onPress={() => handleTermSelection(item.label)}
-                  >
-                    <Text style={[
+            <FlatList
+              data={terms}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.termItem,
+                    { borderBottomColor: theme.divider },
+                  ]}
+                  onPress={() => handleTermSelection(item.label)}
+                >
+                  <Text
+                    style={[
                       styles.termItemText,
                       { color: theme.text },
-                      selectedTerm === item.label && { color: theme.accent, fontWeight: "500" }
-                    ]}>
-                      {item.label}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-                keyExtractor={(item) => item.key}
-              />
-            </View>
-          )}
-    
-          <SegmentedControl
-            options={viewOptions}
-            selectedValue={viewMode}
-            onValueChange={(value) => setViewMode(value as "courses" | "summary")}
-            theme={theme}
-          />
-        </View>
-    
-        <View style={{ flex: 1 }}>
-          {viewMode === "courses" && (
-            <FlatList
-              data={coursesForTerm}
-              renderItem={renderCourseItem}
-              keyExtractor={(item, index) => `${item.enrolled_at}-${index}`}
-              contentContainerStyle={[styles.listContent, { backgroundColor: theme.listBackground }]}
-              showsVerticalScrollIndicator={false}
-              ListEmptyComponent={renderEmptyState}
-              ListFooterComponent={
-                <TouchableOpacity
-                  style={[styles.advisorsButton, { backgroundColor: theme.accent }]}
-                  onPress={() => router.push("/advisors")}
-                >
-                  <Text style={styles.advisorsButtonText}>View Advisors</Text>
+                      selectedTerm === item.label && {
+                        color: theme.accent,
+                        fontWeight: "500",
+                      },
+                    ]}
+                  >
+                    {item.label}
+                  </Text>
                 </TouchableOpacity>
-              }
+              )}
+              keyExtractor={(item) => item.key}
             />
-          )}
-    
-          {viewMode === "summary" && (
-            <View style={{ flex: 1 }}>
-              {renderSummaryView()}
+          </View>
+        )}
+
+        <SegmentedControl
+          options={viewOptions}
+          selectedValue={viewMode}
+          onValueChange={(value) => setViewMode(value as "courses" | "summary")}
+          theme={theme}
+        />
+      </View>
+
+      <View style={{ flex: 1 }}>
+        {viewMode === "courses" && (
+          <FlatList
+            data={coursesForTerm}
+            renderItem={renderCourseItem}
+            keyExtractor={(item, index) => `${item.enrolled_at}-${index}`}
+            contentContainerStyle={[
+              styles.listContent,
+              { backgroundColor: theme.listBackground },
+            ]}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={renderEmptyState}
+            ListFooterComponent={
               <TouchableOpacity
-                style={[styles.advisorsButton, { backgroundColor: theme.accent }]}
+                style={[
+                  styles.advisorsButton,
+                  { backgroundColor: theme.accent },
+                ]}
                 onPress={() => router.push("/advisors")}
               >
                 <Text style={styles.advisorsButtonText}>View Advisors</Text>
               </TouchableOpacity>
-            </View>
-          )}
-        </View>
-    
-        {renderModalContent()}
-      </SafeAreaView>
-    );
+            }
+          />
+        )}
+
+        {viewMode === "summary" && (
+          <View style={{ flex: 1 }}>
+            {renderSummaryView()}
+            <TouchableOpacity
+              style={[styles.advisorsButton, { backgroundColor: theme.accent }]}
+              onPress={() => router.push("/advisors")}
+            >
+              <Text style={styles.advisorsButtonText}>View Advisors</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+
+      {renderModalContent()}
+    </SafeAreaView>
+  );
 };
 
 const styles = StyleSheet.create({
