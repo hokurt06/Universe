@@ -99,12 +99,13 @@ const AcademicScreen: React.FC = () => {
         listBackground: "#121212",
         modalOverlay: "rgba(28,28,30,0.9)",
         cardTitle: "#FFFFFF", 
+        card: "#2C2C2E",
       }
     : {
-        background: "#F9F9F9",
+        background: "#FFFFFF",
         text: "#1C1C1E",
         header: "#1C1C1E",
-        sectionBackground: "#FFFFFF",
+        sectionBackground: "#F5F5F7",
         divider: "#E5E5EA",
         accent: "#007AFF",
         cardBorder: "#E5E5EA",
@@ -113,9 +114,10 @@ const AcademicScreen: React.FC = () => {
         segmentText: "#696969",
         segmentActiveBackground: "#FFFFFF",
         segmentActiveText: "#1C1C1E",
-        listBackground: "#F9F9F9",
+        listBackground: "#FFFFFF",
         modalOverlay: "rgba(0,0,0,0.5)",
         cardTitle: "#000000", 
+        card: "#F5F5F7",
       };
 
 
@@ -252,7 +254,7 @@ const AcademicScreen: React.FC = () => {
 
   const renderCourseItem = ({ item }: { item: any }) => (
     <TouchableOpacity
-      style={styles.classCard}
+      style={[styles.classCard, { backgroundColor: theme.card }]}
       onPress={() => openCourse(item)}
       activeOpacity={0.7}
     >
@@ -723,7 +725,6 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     borderRadius: 10,
     overflow: "hidden",
-    backgroundColor: "#2C2C2E",
   },
   cardContent: {
     padding: 16,
