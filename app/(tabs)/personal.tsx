@@ -215,7 +215,10 @@ const PersonalScreen: React.FC = () => {
               <Text style={{ fontSize: 16, color: theme.arrow }}>→</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.settingRow}>
+            <TouchableOpacity
+              style={styles.settingRow}
+              onPress={() => router.push("/changepassword")}
+            >
               <Text style={[styles.settingText, { color: theme.text }]}>Change Password</Text>
               <Text style={{ fontSize: 16, color: theme.arrow }}>→</Text>
             </TouchableOpacity>
