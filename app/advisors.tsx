@@ -7,18 +7,37 @@ import {
   TouchableOpacity,
   Modal,
   SafeAreaView,
+  Platform,
 } from "react-native";
-import { useRouter } from "expo-router";
-import DateTimePickerModal from "react-native-modal-datetime-picker";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import moment from "moment";
+import { useRouter } from "expo-router";
+import { useThemeStore } from "../hooks/themeStore";
 
 const AdvisorsScreen: React.FC = () => {
-  const [isDatePickerVisible, setDatePickerVisible] = useState<boolean>(false);
-  const [selectedDate, setSelectedDate] = useState<string>("");
+  const [showPicker, setShowPicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [tempDate, setTempDate] = useState(new Date());
   const [selectedAdvisor, setSelectedAdvisor] = useState<any>(null);
   const router = useRouter();
+  const { isDarkMode } = useThemeStore();
 
-  // Hardcoded 
+  const theme = isDarkMode
+    ? {
+        background: "#121212",
+        text: "#FFFFFF",
+        card: "#2C2C2E",
+        buttonBackground: "#0A84FF",
+        modalOverlay: "rgba(28,28,30,0.9)",
+      }
+    : {
+        background: "#F9F9F9",
+        text: "#1C1C1E",
+        card: "#FFFFFF",
+        buttonBackground: "#007BFF",
+        modalOverlay: "rgba(0,0,0,0.5)",
+      };
+
   const advisors = [
     {
       title: "Financial Advisor",
@@ -43,84 +62,119 @@ const AdvisorsScreen: React.FC = () => {
     },
   ];
 
-  const handleDateConfirm = (date: Date) => {
-    setSelectedDate(moment(date).format("MMMM Do YYYY, h:mm A"));
-    setDatePickerVisible(false);
-  };
-
   const handleSchedulePress = (advisor: any) => {
     setSelectedAdvisor(advisor);
-    setDatePickerVisible(true);
+    setTempDate(new Date());
+    setShowPicker(true);
+  };
+
+  const handleConfirm = () => {
+    setSelectedDate(tempDate);
+    setShowPicker(false);
   };
 
   const handleBackToAcademics = () => {
-    router.replace("/(tabs)/academic"); // Navigate back to the previous screen (AcademicScreen)
+    router.replace("/(tabs)/academic");
   };
 
   return (
-    <SafeAreaView style={styles.safeContainer}>
+    <SafeAreaView style={[styles.safeContainer, { backgroundColor: theme.background }]}>
       <View style={styles.container}>
-        <Text style={styles.header}>Advisors</Text>
-        <ScrollView
-          style={styles.advisorList}
-          contentContainerStyle={styles.advisorListContent}
-        >
+        <Text style={[styles.header, { color: theme.text }]}>Advisors</Text>
+        <ScrollView style={styles.advisorList} contentContainerStyle={styles.advisorListContent}>
           {advisors.map((advisor, index) => (
-            <View key={index} style={styles.advisorCard}>
-              <Text style={styles.advisorTitle}>{advisor.title}</Text>
-              <Text style={styles.advisorName}>{advisor.name}</Text>
-              <Text style={styles.advisorDetail}>
+            <View key={index} style={[styles.advisorCard, { backgroundColor: theme.card }]}>
+              <Text style={[styles.advisorTitle, { color: theme.text }]}>{advisor.title}</Text>
+              <Text style={[styles.advisorName, { color: theme.text }]}>{advisor.name}</Text>
+              <Text style={[styles.advisorDetail, { color: theme.text }]}>
                 Phone: {advisor.phone_number}
               </Text>
-              <Text style={styles.advisorDetail}>
+              <Text style={[styles.advisorDetail, { color: theme.text }]}>
                 Office: {advisor.office_address}
               </Text>
-              <Text style={styles.advisorDetail}>
+              <Text style={[styles.advisorDetail, { color: theme.text }]}>
                 Office Hours: {advisor.office_hours}
               </Text>
               <TouchableOpacity
-                style={styles.scheduleButton}
+                style={[styles.scheduleButton, { backgroundColor: theme.buttonBackground }]}
                 onPress={() => handleSchedulePress(advisor)}
               >
-                <Text style={styles.scheduleButtonText}>
-                  Schedule Appointment
-                </Text>
+                <Text style={styles.scheduleButtonText}>Schedule Appointment</Text>
               </TouchableOpacity>
             </View>
           ))}
         </ScrollView>
 
-        {/* Back to Academics Button */}
         <TouchableOpacity
-          style={styles.backButton}
+          style={[styles.backButton, { backgroundColor: theme.buttonBackground }]}
           onPress={handleBackToAcademics}
         >
           <Text style={styles.backButtonText}>Back to Academics</Text>
         </TouchableOpacity>
 
-        <DateTimePickerModal
-          isVisible={isDatePickerVisible}
-          mode="datetime"
-          onConfirm={handleDateConfirm}
-          onCancel={() => setDatePickerVisible(false)}
-        />
+        <Modal transparent animationType="fade" visible={showPicker}>
+          <View style={[styles.modalOverlay, { backgroundColor: theme.modalOverlay }]}>
+            <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+              <Text style={[styles.modalHeader, { color: theme.text }]}>Select Appointment Time</Text>
+              {Platform.OS === "ios" && (
+                <DateTimePicker
+                  value={tempDate}
+                  mode="datetime"
+                  display="spinner"
+                  onChange={(event, date) => date && setTempDate(date)}
+                  textColor={theme.text}
+                  themeVariant={isDarkMode ? "dark" : "light"}
+                />
+              )}
+              {Platform.OS === "android" && (
+                <DateTimePicker
+                  value={tempDate}
+                  mode="datetime"
+                  display="default"
+                  onChange={(event, date) => {
+                    if (event.type === "set" && date) {
+                      setTempDate(date);
+                      handleConfirm();
+                    } else {
+                      setShowPicker(false);
+                    }
+                  }}
+                />
+              )}
+              {Platform.OS === "ios" && (
+                <View style={{ flexDirection: "row", justifyContent: "space-around", width: "100%" }}>
+                  <TouchableOpacity
+                    style={[styles.closeButton, { backgroundColor: "#000" }]}
+                    onPress={() => setShowPicker(false)}
+                  >
+                    <Text style={styles.closeButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.closeButton, { backgroundColor: theme.buttonBackground }]}
+                    onPress={handleConfirm}
+                  >
+                    <Text style={styles.closeButtonText}>Confirm</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          </View>
+        </Modal>
+
         {selectedDate && selectedAdvisor && (
-          <Modal
-            transparent={true}
-            animationType="slide"
-            visible={selectedDate !== ""}
-          >
-            <View style={styles.modalOverlay}>
-              <View style={styles.modalContent}>
-                <Text style={styles.modalHeader}>
+          <Modal transparent animationType="slide" visible={!!selectedDate}>
+            <View style={[styles.modalOverlay, { backgroundColor: theme.modalOverlay }]}>
+              <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+                <Text style={[styles.modalHeader, { color: theme.text }]}>
                   Appointment Scheduled with {selectedAdvisor.name}
                 </Text>
-                <Text style={styles.modalBody}>
-                  Your appointment is scheduled for: {selectedDate}
+                <Text style={[styles.modalBody, { color: theme.text }]}>
+                  Your appointment is scheduled for:{" "}
+                  {moment(selectedDate).format("MMMM Do YYYY, h:mm A")}
                 </Text>
                 <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={() => setSelectedDate("")}
+                  style={[styles.closeButton, { backgroundColor: theme.buttonBackground }]}
+                  onPress={() => setSelectedDate(null)}
                 >
                   <Text style={styles.closeButtonText}>Close</Text>
                 </TouchableOpacity>
@@ -134,32 +188,19 @@ const AdvisorsScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  safeContainer: {
-    flex: 1,
-    backgroundColor: "#F9F9F9",
-  },
-  container: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 20,
-  },
+  safeContainer: { flex: 1 },
+  container: { flex: 1, paddingHorizontal: 16, paddingTop: 20 },
   header: {
     fontSize: 28,
     fontWeight: "700",
-    color: "#1C1C1E",
     textAlign: "center",
     marginBottom: 20,
   },
-  advisorList: {
-    flex: 1,
-  },
-  advisorListContent: {
-    paddingBottom: 80, // Increased to ensure space for the back button
-  },
+  advisorList: { flex: 1 },
+  advisorListContent: { paddingBottom: 80 },
   advisorCard: {
     padding: 20,
     marginBottom: 16,
-    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -170,19 +211,16 @@ const styles = StyleSheet.create({
   advisorTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#333",
     textAlign: "center",
     marginBottom: 4,
   },
   advisorName: {
     fontSize: 18,
-    color: "#222",
     textAlign: "center",
     marginBottom: 12,
   },
   advisorDetail: {
     fontSize: 16,
-    color: "#666",
     textAlign: "center",
     marginBottom: 6,
   },
@@ -190,7 +228,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingVertical: 16,
     paddingHorizontal: 24,
-    backgroundColor: "#007BFF",
     borderRadius: 20,
     alignSelf: "center",
   },
@@ -206,8 +243,6 @@ const styles = StyleSheet.create({
     left: "5%",
     width: "90%",
     paddingVertical: 16,
-    paddingHorizontal: 24,
-    backgroundColor: "#007BFF",
     borderRadius: 20,
     alignItems: "center",
     zIndex: 10,
@@ -222,12 +257,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContent: {
     width: "85%",
     padding: 20,
-    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     alignItems: "center",
     shadowColor: "#000",
@@ -239,22 +272,19 @@ const styles = StyleSheet.create({
   modalHeader: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#1C1C1E",
     marginBottom: 12,
     textAlign: "center",
   },
   modalBody: {
     fontSize: 18,
-    color: "#555",
     marginBottom: 20,
     textAlign: "center",
   },
   closeButton: {
     paddingVertical: 12,
     paddingHorizontal: 30,
-    backgroundColor: "#007BFF",
     borderRadius: 20,
-    alignSelf: "center",
+    marginTop: 20,
   },
   closeButtonText: {
     color: "#FFFFFF",
