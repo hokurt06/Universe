@@ -1,16 +1,16 @@
 /* app/(tabs)/activity.tsx
  *
- * Campus Events screen – only future events are shown.
- * Fully‑typed, no implicit‑any errors.
+ * Campus Events screen – Apple aesthetic design
+ * Clean, minimal, elegant UI following Apple's design principles
  */
 
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  Pressable,
   FlatList,
+  TouchableOpacity,
   SafeAreaView,
   StatusBar,
   ScrollView,
@@ -23,20 +23,17 @@ import { Ionicons } from "@expo/vector-icons";
 // Types
 ////////////////////////////////////////////////////////////////////////////////
 
-/** Category object as returned by the events API */
 interface ApiCategory {
   CategoryName: string;
   SubCategoryName?: string;
 }
 
-/** Top‑level filter tabs */
 interface TopCategory {
   id: "academic" | "alumni" | "community" | "arts" | "career" | "student";
   title: string;
   icon: "school" | "ribbon" | "leaf" | "color-palette" | "briefcase" | "happy";
 }
 
-/** Event view‑model used by the component */
 interface EventVM {
   id: string;
   name: string;
@@ -62,25 +59,24 @@ const CATEGORIES: readonly TopCategory[] = [
   { id: "student", title: "Student Life", icon: "happy" },
 ] as const;
 
-const THEME = {
-  primary: "#3B82F6",
-  primaryDark: "#2563EB",
-  white: "#FFFFFF",
-  text: "#1E3A8A",
+const COLORS = {
   background: "#FFFFFF",
+  cardBackground: "#F5F5F7",
+  label: "#1D1D1F",
+  secondaryLabel: "#86868B",
+  separator: "#E5E5EA",
+  systemBlue: "#007AFF",
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-// Robust date helpers
+// Helpers
 ////////////////////////////////////////////////////////////////////////////////
 
-/** Extracts a millisecond UNIX timestamp or falls back to Date.parse */
 const toMillis = (raw: string): number => {
   const match = raw.match(/\d{9,}/)?.[0];
   return match ? Number(match) : Date.parse(raw);
 };
 
-/** “May 12” */
 const formatDate = (raw: string) => {
   const ms = toMillis(raw);
   return isNaN(ms)
@@ -91,7 +87,6 @@ const formatDate = (raw: string) => {
       });
 };
 
-/** “2:07 PM” */
 const formatTime = (raw: string) => {
   const ms = toMillis(raw);
   return isNaN(ms)
@@ -102,15 +97,10 @@ const formatTime = (raw: string) => {
       });
 };
 
-/** True iff the timestamp is in the past */
 const isPast = (raw: string) => {
   const ms = toMillis(raw);
   return isNaN(ms) ? false : ms < Date.now();
 };
-
-////////////////////////////////////////////////////////////////////////////////
-// Data shaping
-////////////////////////////////////////////////////////////////////////////////
 
 const formatEvents = (raw: any[], categoryId: TopCategory["id"]): EventVM[] => {
   const categoryTitle =
@@ -142,180 +132,104 @@ const formatEvents = (raw: any[], categoryId: TopCategory["id"]): EventVM[] => {
 ////////////////////////////////////////////////////////////////////////////////
 
 const ActivityScreen: React.FC = () => {
-  const [selectedCategoryId, setSelectedCategoryId] =
-    React.useState<TopCategory["id"]>("academic");
-  const [events, setEvents] = React.useState<EventVM[]>([]);
-  const [loading, setLoading] = React.useState(false);
-  const [modalVisible, setModalVisible] = React.useState(false);
-  const [selectedEvent, setSelectedEvent] = React.useState<EventVM | null>(
-    null
-  );
+  const [selectedCategoryId, setSelectedCategoryId] = useState<TopCategory["id"]>("academic");
+  const [events, setEvents] = useState<EventVM[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<EventVM | null>(null);
 
-  /** Fetch + shape data */
-  const fetchEvents = React.useCallback(
-    async (categoryId: TopCategory["id"]) => {
-      setLoading(true);
-      try {
-        const res = await fetch(
-          "https://universe.terabytecomputing.com:3000/api/v1/events",
-          { headers: { "Content-Type": "application/json" } }
-        );
-        const data = await res.json();
-        setEvents(formatEvents(data, categoryId));
-      } catch (err) {
-        console.error("Error fetching events:", err);
-      } finally {
-        setLoading(false);
-      }
-    },
-    []
-  );
+  const fetchEvents = useCallback(async (categoryId: TopCategory["id"]) => {
+    setLoading(true);
+    try {
+      const res = await fetch("https://universe.terabytecomputing.com:3000/api/v1/events", {
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+      setEvents(formatEvents(data, categoryId));
+    } catch (err) {
+      console.error("Error fetching events:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchEvents(selectedCategoryId);
   }, [fetchEvents, selectedCategoryId]);
 
-  ////////////////////////////////////////////////////////////////////////////
-  // Render helpers
-  ////////////////////////////////////////////////////////////////////////////
-
   const renderHeader = () => (
     <View style={styles.headerContainer}>
-      <Text style={styles.screenTitle}>CAMPUS EVENTS</Text>
-
+      <Text style={styles.headerText}>Events</Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.categoriesContainer}
+        contentContainerStyle={styles.categoryScroll}
       >
-        {CATEGORIES.map((cat: TopCategory) => {
-          const selected = cat.id === selectedCategoryId;
-          return (
-            <Pressable
-              key={cat.id}
-              style={[
-                styles.categoryTab,
-                selected && styles.categoryTabSelected,
-              ]}
-              onPress={() => setSelectedCategoryId(cat.id)}
-              accessibilityRole="button"
-              accessibilityLabel={cat.title}
-            >
-              <Text
-                style={[
-                  styles.categoryLabel,
-                  selected && styles.categoryLabelSelected,
-                ]}
-              >
-                {cat.title}
-              </Text>
-            </Pressable>
-          );
-        })}
+        {CATEGORIES.map((cat) => (
+          <TouchableOpacity
+            key={cat.id}
+            style={[styles.categoryTab, selectedCategoryId === cat.id && styles.categoryTabSelected]}
+            onPress={() => setSelectedCategoryId(cat.id)}
+          >
+            <Text style={[styles.categoryLabel, selectedCategoryId === cat.id && styles.categoryLabelSelected]}>
+              {cat.title}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </ScrollView>
     </View>
   );
 
   const renderItem = ({ item }: { item: EventVM }) => (
-    <Pressable
-      style={styles.eventCard}
+    <TouchableOpacity
+      style={styles.card}
+      activeOpacity={0.8}
       onPress={() => {
         setSelectedEvent(item);
         setModalVisible(true);
       }}
     >
-      <View style={styles.eventIconContainer}>
-        <Ionicons name={item.icon} size={24} color={THEME.primary} />
-      </View>
-
-      <View style={styles.eventContent}>
-        <View style={styles.eventHeader}>
-          <Text style={styles.eventName} numberOfLines={1}>
-            {item.name}
-          </Text>
-          <View style={styles.dateChip}>
-            <Text style={styles.dateText}>{item.date}</Text>
-          </View>
-        </View>
-
-        <Text style={styles.eventDescription} numberOfLines={2}>
-          {item.categories
-            .map(
-              (c: ApiCategory) =>
-                `${c.CategoryName}${
-                  c.SubCategoryName ? ` – ${c.SubCategoryName}` : ""
-                }`
-            )
-            .join(", ")}
-        </Text>
-      </View>
-    </Pressable>
+      <Text style={styles.cardTitle}>{item.name}</Text>
+      <Text style={styles.cardSubtitle}>{item.date} at {item.time}</Text>
+      <Text style={styles.cardLocation}>{item.location}</Text>
+    </TouchableOpacity>
   );
 
-  ////////////////////////////////////////////////////////////////////////////
-  // JSX tree
-  ////////////////////////////////////////////////////////////////////////////
-
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={THEME.primary} />
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
       {renderHeader()}
-
-      <View style={styles.eventsContainer}>
-        {loading ? (
-          <ActivityIndicator size="large" color={THEME.primaryDark} />
-        ) : (
-          <FlatList
-            data={events}
-            keyExtractor={(it) => it.id}
-            renderItem={renderItem}
-            contentContainerStyle={styles.eventsList}
-            refreshing={loading}
-            onRefresh={() => fetchEvents(selectedCategoryId)}
-            ListEmptyComponent={
-              <Text style={styles.emptyText}>No upcoming events.</Text>
-            }
-          />
-        )}
-      </View>
-
-      {/* =========== Modal =========== */}
-      <Modal visible={modalVisible} animationType="fade" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            {selectedEvent && (
-              <>
-                <Text style={styles.modalTitle}>{selectedEvent.name}</Text>
-                <Text style={styles.modalDateTime}>
-                  {selectedEvent.date} at {selectedEvent.time}
-                </Text>
-                <Text style={styles.modalDescription}>
-                  {selectedEvent.description}
-                </Text>
-
-                <Text style={styles.modalLabel}>Location:</Text>
-                <Text style={styles.modalText}>{selectedEvent.location}</Text>
-
-                <Text style={styles.modalLabel}>Categories:</Text>
-                {selectedEvent.categories.map((c: ApiCategory, idx: number) => (
-                  <Text key={idx} style={styles.modalText}>
-                    • {c.CategoryName}
-                    {c.SubCategoryName ? ` – ${c.SubCategoryName}` : ""}
-                  </Text>
-                ))}
-              </>
-            )}
-
-            <Pressable
-              style={styles.closeButton}
-              onPress={() => setModalVisible(false)}
-              accessibilityRole="button"
-              accessibilityLabel="Close event details"
-            >
-              <Text style={styles.closeButtonText}>Close</Text>
-            </Pressable>
-          </View>
+      {loading ? (
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color={COLORS.systemBlue} />
         </View>
+      ) : (
+        <FlatList
+          data={events}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.listContainer}
+          ListEmptyComponent={<Text style={styles.emptyText}>No upcoming events</Text>}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+        />
+      )}
+
+      <Modal visible={modalVisible} animationType="slide">
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setModalVisible(false)}>
+              <Text style={styles.modalClose}>Close</Text>
+            </TouchableOpacity>
+          </View>
+          {selectedEvent && (
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>{selectedEvent.name}</Text>
+              <Text style={styles.modalSubtitle}>{selectedEvent.date} at {selectedEvent.time}</Text>
+              <Text style={styles.modalLocation}>{selectedEvent.location}</Text>
+              <Text style={styles.modalDescription}>{selectedEvent.description}</Text>
+            </View>
+          )}
+        </SafeAreaView>
       </Modal>
     </SafeAreaView>
   );
@@ -326,126 +240,122 @@ const ActivityScreen: React.FC = () => {
 ////////////////////////////////////////////////////////////////////////////////
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: THEME.background },
-
-  // ----- header -----
-  headerContainer: {
-    backgroundColor: THEME.primary,
-    paddingTop: 16,
-    paddingBottom: 12,
-    paddingHorizontal: 16,
-  },
-  screenTitle: {
-    fontSize: 20,
-    color: THEME.white,
-    fontWeight: "bold",
-    marginBottom: 8,
-  },
-  categoriesContainer: { flexDirection: "row", gap: 8 },
-  categoryTab: {
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: THEME.white,
-    backgroundColor: THEME.primaryDark,
-  },
-  categoryTabSelected: { backgroundColor: THEME.white },
-  categoryLabel: { color: THEME.white, fontSize: 14, fontWeight: "500" },
-  categoryLabelSelected: { color: THEME.primaryDark },
-
-  // ----- list -----
-  eventsContainer: { flex: 1, paddingHorizontal: 16, paddingTop: 16 },
-  eventsList: { paddingBottom: 60 },
-  emptyText: { textAlign: "center", color: "#6B7280", marginTop: 32 },
-
-  // ----- card -----
-  eventCard: {
-    flexDirection: "row",
-    backgroundColor: "#F9FAFB",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-    elevation: 2,
-  },
-  eventIconContainer: {
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  eventContent: { flex: 1 },
-  eventHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  eventName: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: THEME.text,
+  safeArea: {
     flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  headerContainer: {
+    paddingTop: 8,
+    paddingBottom: 16,
+    paddingHorizontal: 20,
+    backgroundColor: COLORS.background,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.separator,
+  },
+  headerText: {
+    fontSize: 28,
+    fontWeight: "600",
+    color: COLORS.label,
+    marginBottom: 12,
+  },
+  categoryScroll: {
+    flexDirection: "row",
+    paddingHorizontal: 4,
+    paddingVertical: 4
+  },
+  categoryTab: {
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 16,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
     marginRight: 8,
   },
-  dateChip: {
-    backgroundColor: THEME.primary,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
+  categoryTabSelected: {
+    backgroundColor: COLORS.systemBlue,
   },
-  dateText: {
-    color: THEME.white,
-    fontSize: 12,
+  categoryLabel: {
+    fontSize: 15,
+    color: COLORS.secondaryLabel,
+    fontWeight: "500",
+  },
+  categoryLabelSelected: {
+    color: COLORS.background,
     fontWeight: "600",
   },
-  eventDescription: {
-    fontSize: 14,
-    color: "#4B5563",
-    marginTop: 4,
+  listContainer: {
+    padding: 16,
   },
-
-  // ----- modal -----
-  modalOverlay: {
+  card: {
+    backgroundColor: COLORS.cardBackground,
+    padding: 16,
+    borderRadius: 10,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: COLORS.label,
+    marginBottom: 4,
+  },
+  cardSubtitle: {
+    fontSize: 14,
+    color: COLORS.secondaryLabel,
+    marginBottom: 2,
+  },
+  cardLocation: {
+    fontSize: 14,
+    color: COLORS.secondaryLabel,
+  },
+  separator: {
+    height: 12,
+  },
+  loaderContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
   },
-  modalCard: {
-    width: "90%",
-    backgroundColor: "#fff",
-    borderRadius: 12,
+  emptyText: {
+    textAlign: "center",
+    marginTop: 40,
+    fontSize: 16,
+    color: COLORS.secondaryLabel,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  modalHeader: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.separator,
+  },
+  modalClose: {
+    fontSize: 16,
+    color: COLORS.systemBlue,
+    fontWeight: "500",
+  },
+  modalContent: {
     padding: 20,
-    elevation: 10,
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontWeight: "600",
+    color: COLORS.label,
     marginBottom: 8,
-    color: THEME.text,
   },
-  modalDateTime: {
-    fontSize: 14,
+  modalSubtitle: {
+    fontSize: 16,
+    color: COLORS.secondaryLabel,
+    marginBottom: 4,
+  },
+  modalLocation: {
+    fontSize: 16,
+    color: COLORS.secondaryLabel,
     marginBottom: 12,
-    color: "#374151",
   },
-  modalDescription: { fontSize: 14, marginBottom: 10, color: "#374151" },
-  modalLabel: {
-    fontWeight: "bold",
-    marginTop: 8,
-    color: THEME.text,
-  },
-  modalText: { color: "#374151", fontSize: 14 },
-
-  closeButton: {
-    marginTop: 20,
-    backgroundColor: THEME.primaryDark,
-    paddingVertical: 8,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  closeButtonText: {
-    color: THEME.white,
-    fontWeight: "bold",
+  modalDescription: {
+    fontSize: 16,
+    lineHeight: 22,
+    color: COLORS.label,
   },
 });
 
