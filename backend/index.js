@@ -741,6 +741,44 @@ router.patch("/profile", authenticateToken, async (req, res) => {
   }
 });
 
+router.post(
+  "/auth/change-password",
+  authenticateToken,
+  requireFields(["currentPassword", "newPassword"]),
+  async (req, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      // 1) fetch the user
+      const user = await User.findById(req.user.id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // 2) verify their current password
+      const match = await bcrypt.compare(currentPassword, user.password_hash);
+      if (!match) {
+        return res
+          .status(401)
+          .json({ message: "Current password is incorrect" });
+      }
+
+      // 3) hash & save the new one
+      const newHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+      user.password_hash = newHash;
+      // optional: clear any reset-token field
+      user.password_reset = null;
+      await user.save();
+
+      return res.json({ message: "Password changed successfully" });
+    } catch (err) {
+      console.error("Error in change-password:", err);
+      return res
+        .status(500)
+        .json({ message: "Could not change password", error: err.message });
+    }
+  }
+);
+
 // -------------------------------------------------
 // Mount the API Router with a Prefix & Start Server
 // -------------------------------------------------
