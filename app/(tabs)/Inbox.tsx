@@ -12,16 +12,23 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useThemeStore } from "../../hooks/themeStore"; // Ensure useThemeStore is correctly imported
 
 type Props = {
   navigation: NativeStackNavigationProp<any>;
 };
 
-const BackIcon = () => (
-  <View style={styles.backIcon}>
-    <Text style={styles.backIconText}>{"←"}</Text>
-  </View>
-);
+const BackIcon = () => {
+  const { isDarkMode } = useThemeStore();
+  const themeAccent = isDarkMode ? "#0A84FF" : "#007AFF"; // Or just use theme.accent
+
+  return (
+    <View style={styles.backIcon}>
+      <Text style={[styles.backIconText, { color: themeAccent }]}>{"←"}</Text>
+    </View>
+  );
+};
+
 
 const InboxScreen: React.FC<Props> = ({ navigation }) => {
   const [emails, setEmails] = useState<any[]>([]);
@@ -29,6 +36,47 @@ const InboxScreen: React.FC<Props> = ({ navigation }) => {
   const slideAnimation = useRef(new Animated.Value(0)).current;
   const fadeAnimation = useRef(new Animated.Value(1)).current;
   const insets = useSafeAreaInsets();
+
+  const { isDarkMode } = useThemeStore(); // Get the dark mode status
+
+  // Define theme based on dark mode value
+  const theme = isDarkMode
+    ? {
+        background: "#121212",
+        text: "#FFFFFF",
+        header: "#FFFFFF",
+        sectionBackground: "#2A2A2A",
+        divider: "#3E3E3E",
+        accent: "#0A84FF",
+        cardBorder: "#3A3A3A",
+        avatarBackground: "#0A84FF",
+        segmentBackground: "#2C2C2E",
+        segmentText: "#D3D3D3",
+        segmentActiveBackground: "#3A3A3C",
+        segmentActiveText: "#FFFFFF",
+        listBackground: "#121212",
+        modalOverlay: "rgba(28,28,30,0.9)",
+        cardTitle: "#FFFFFF", 
+        card: "#2C2C2E",
+      }
+    : {
+        background: "#FFFFFF",
+        text: "#1C1C1E",
+        header: "#1C1C1E",
+        sectionBackground: "#F5F5F7",
+        divider: "#E5E5EA",
+        accent: "#007AFF",
+        cardBorder: "#E5E5EA",
+        avatarBackground: "#007AFF",
+        segmentBackground: "#F2F2F7",
+        segmentText: "#696969",
+        segmentActiveBackground: "#FFFFFF",
+        segmentActiveText: "#1C1C1E",
+        listBackground: "#FFFFFF",
+        modalOverlay: "rgba(0,0,0,0.5)",
+        cardTitle: "#000000", 
+        card: "#F5F5F7",
+      };
 
   useEffect(() => {
     setEmails([
@@ -92,7 +140,7 @@ const InboxScreen: React.FC<Props> = ({ navigation }) => {
 
   const renderEmailItem = ({ item }: { item: any }) => (
     <TouchableOpacity 
-      style={styles.emailCard} 
+      style={[styles.emailCard, { backgroundColor: isDarkMode ? "#2C2C2E" : "#F5F5F7" }]} 
       onPress={() => openEmail(item)}
       activeOpacity={0.7}
     >
@@ -107,17 +155,17 @@ const InboxScreen: React.FC<Props> = ({ navigation }) => {
             </Text>
           </View>
           <View style={styles.senderDetails}>
-            <Text style={styles.senderText} numberOfLines={1}>
+            <Text style={[styles.senderText, { color: theme.text }]} numberOfLines={1}>
               {item.sender}
             </Text>
-            <Text style={styles.timeText}>{item.timestamp}</Text>
+            <Text style={[styles.timeText, { color: theme.text }]}>{item.timestamp}</Text>
           </View>
         </View>
         <View style={styles.messagePreview}>
-          <Text style={styles.subjectText} numberOfLines={1}>
+          <Text style={[styles.subjectText, { color: theme.text }]} numberOfLines={1}>
             {item.subject}
           </Text>
-          <Text style={styles.previewText} numberOfLines={2}>
+          <Text style={[styles.previewText, { color: theme.text }]} numberOfLines={2}>
             {item.body}
           </Text>
         </View>
@@ -130,8 +178,8 @@ const InboxScreen: React.FC<Props> = ({ navigation }) => {
       <View style={styles.emptyStateIcon}>
         <Text style={styles.emptyStateIconText}>📭</Text>
       </View>
-      <Text style={styles.noEmailsText}>Your inbox is empty</Text>
-      <Text style={styles.noEmailsSubtext}>
+      <Text style={[styles.noEmailsText, { color: theme.text }]}>Your inbox is empty</Text>
+      <Text style={[styles.noEmailsSubtext, { color: theme.text }]}>
         New messages will appear here
       </Text>
     </View>
@@ -141,14 +189,25 @@ const InboxScreen: React.FC<Props> = ({ navigation }) => {
     <Animated.View 
       style={[
         styles.container, 
-        { opacity: fadeAnimation }
+        { opacity: fadeAnimation, backgroundColor: theme.background }
       ]}
     >
       <SafeAreaView style={styles.safeArea}>
-        <StatusBar barStyle="dark-content" />
-        <View style={[styles.headerContainer, { paddingTop: insets.top > 0 ? 8 : 16 }]}>
-          <Text style={styles.header}>Inbox</Text>
+        <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
+        <View
+          style={[
+            styles.headerContainer,
+            {
+              paddingTop: insets.top > 0 ? 8 : 16,
+              backgroundColor: theme.background,
+            },
+          ]}
+        >
+          <Text style={[styles.header, { color: theme.header }]}>
+            Inbox
+          </Text>
         </View>
+
         <FlatList
           data={emails}
           renderItem={renderEmailItem}
@@ -156,8 +215,10 @@ const InboxScreen: React.FC<Props> = ({ navigation }) => {
           contentContainerStyle={styles.emailsContent}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={renderEmptyInbox}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
-        />
+          ItemSeparatorComponent={() => (
+            <View style={{ height: 1, backgroundColor: theme.divider, marginHorizontal: 16 }} />
+          )}
+                  />
       </SafeAreaView>
     </Animated.View>
   );
@@ -167,31 +228,34 @@ const InboxScreen: React.FC<Props> = ({ navigation }) => {
       inputRange: [0, 1],
       outputRange: [Platform.OS === 'ios' ? 600 : 400, 0],
     });
-
+  
     return (
-      <Animated.View 
+      <Animated.View
         style={[
           styles.detailContainer,
-          { transform: [{ translateX }] }
+          {
+            transform: [{ translateX }],
+            backgroundColor: theme.background, // Entire popup bg
+          },
         ]}
       >
-        <SafeAreaView style={styles.detailSafeArea}>
-          <View style={styles.detailHeader}>
-            <TouchableOpacity 
-              style={styles.backButton} 
+        <SafeAreaView style={[styles.detailSafeArea, { backgroundColor: theme.background }]}>
+          <View style={[styles.detailHeader, { backgroundColor: theme.sectionBackground }]}>
+            <TouchableOpacity
+              style={styles.backButton}
               onPress={closeEmail}
               hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
             >
               <BackIcon />
-              <Text style={styles.backButtonText}>Inbox</Text>
+              <Text style={[styles.backButtonText, { color: theme.accent }]}>Inbox</Text>
             </TouchableOpacity>
           </View>
-
+  
           <FlatList
             data={[1]}
             renderItem={() => (
-              <View style={styles.emailDetailWrapper}>
-                <Text style={styles.detailSubject}>
+              <View style={[styles.emailDetailWrapper, { backgroundColor: theme.card }]}>
+                <Text style={[styles.detailSubject, { color: theme.text }]}>
                   {selectedEmail?.subject}
                 </Text>
                 <View style={styles.detailMetaContainer}>
@@ -204,16 +268,16 @@ const InboxScreen: React.FC<Props> = ({ navigation }) => {
                     </Text>
                   </View>
                   <View style={styles.detailSenderContainer}>
-                    <Text style={styles.detailSenderName}>
+                    <Text style={[styles.detailSenderName, { color: theme.text }]}>
                       {selectedEmail?.sender}
                     </Text>
-                    <Text style={styles.detailTimestamp}>
+                    <Text style={[styles.detailTimestamp, { color: theme.text }]}>
                       {selectedEmail?.timestamp}
                     </Text>
                   </View>
                 </View>
                 <View style={styles.messageBody}>
-                  <Text style={styles.detailBody}>
+                  <Text style={[styles.detailBody, { color: theme.text }]}>
                     {selectedEmail?.body}
                   </Text>
                 </View>
@@ -221,15 +285,16 @@ const InboxScreen: React.FC<Props> = ({ navigation }) => {
             )}
             keyExtractor={() => "detail"}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.detailScrollContent}
+            contentContainerStyle={[styles.detailScrollContent, { backgroundColor: theme.background }]}
           />
         </SafeAreaView>
       </Animated.View>
     );
   };
+  
 
   return (
-    <View style={styles.mainContainer}>
+    <View style={[styles.mainContainer, { backgroundColor: theme.background }]}>
       {renderInbox()}
       {selectedEmail && renderEmailDetail()}
     </View>
@@ -239,33 +304,27 @@ const InboxScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
   },
   safeArea: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
   },
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
   },
   headerContainer: {
     paddingHorizontal: 20,
     paddingBottom: 16,
-    backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E5EA",
   },
   header: {
     fontSize: 28,
     fontWeight: "600",
-    color: "#1D1D1F",
   },
   emailsContent: {
     paddingVertical: 8,
   },
   emailCard: {
-    backgroundColor: "#F5F5F7",
     marginHorizontal: 16,
     marginVertical: 10,
     borderRadius: 10,
@@ -298,20 +357,13 @@ const styles = StyleSheet.create({
   },
   senderDetails: {
     flex: 1,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
   },
   senderText: {
     fontSize: 16,
     fontWeight: "500",
-    color: "#1D1D1F",
-    flex: 1,
-    paddingRight: 10,
   },
   timeText: {
     fontSize: 14,
-    color: "#86868B",
   },
   messagePreview: {
     paddingLeft: 52,
@@ -319,12 +371,9 @@ const styles = StyleSheet.create({
   subjectText: {
     fontSize: 15,
     fontWeight: "500",
-    color: "#1D1D1F",
-    marginBottom: 4,
   },
   previewText: {
     fontSize: 14,
-    color: "#86868B",
   },
   separator: {
     height: 1,
@@ -351,12 +400,9 @@ const styles = StyleSheet.create({
   noEmailsText: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#1D1D1F",
-    marginBottom: 8,
   },
   noEmailsSubtext: {
     fontSize: 16,
-    color: "#86868B",
     textAlign: "center",
   },
   detailContainer: {
@@ -369,11 +415,12 @@ const styles = StyleSheet.create({
   },
   detailHeader: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E5EA",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     backgroundColor: "#FFFFFF",
   },
   backButton: {
@@ -385,11 +432,9 @@ const styles = StyleSheet.create({
   },
   backIconText: {
     fontSize: 18,
-    color: "#0066CC",
   },
   backButtonText: {
     fontSize: 16,
-    color: "#0066CC",
     fontWeight: "500",
   },
   detailScrollContent: {
@@ -404,8 +449,6 @@ const styles = StyleSheet.create({
   detailSubject: {
     fontSize: 20,
     fontWeight: "600",
-    color: "#1D1D1F",
-    marginBottom: 16,
   },
   detailMetaContainer: {
     flexDirection: "row",
@@ -432,11 +475,9 @@ const styles = StyleSheet.create({
   detailSenderName: {
     fontSize: 16,
     fontWeight: "500",
-    color: "#1D1D1F",
   },
   detailTimestamp: {
     fontSize: 14,
-    color: "#86868B",
   },
   messageBody: {
     paddingTop: 16,
@@ -446,7 +487,6 @@ const styles = StyleSheet.create({
   detailBody: {
     fontSize: 16,
     lineHeight: 22,
-    color: "#1D1D1F",
   },
 });
 
