@@ -223,7 +223,10 @@ const PersonalScreen: React.FC = () => {
               <Text style={{ fontSize: 16, color: theme.arrow }}>→</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.settingRow}>
+            <TouchableOpacity
+              style={styles.settingRow}
+              onPress={() => router.push("/PrivacySettings")}
+            >
               <Text style={[styles.settingText, { color: theme.text }]}>Privacy Settings</Text>
               <Text style={{ fontSize: 16, color: theme.arrow }}>→</Text>
             </TouchableOpacity>
