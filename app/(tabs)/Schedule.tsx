@@ -17,15 +17,21 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useThemeStore } from "../../hooks/themeStore";
 
 /* ────────── segmented control ────────── */
+/* This is a reusable segmented control component that lets the user switch between options: "Schedule" and "Exams." */
+/* It lets the user switch between the two views by tapping on one. Whichever one is selected gets highlighted, and the app shows the right content underneath. */
+/* demonstrates how to selectively style active tabs with different backgrounds and text colors for a clean toggle effect. */
+
+/* options: tells it what buttons to show ("Schedule", "Exams", etc.)
+selectedValue: tells it which one is currently selected
+onValueChange: tells the parent what to update when a button is pressed */
+
 const SegmentedControl: React.FC<{
   options: { key: string; label: string }[];
   selectedValue: string;
   onValueChange: (value: string) => void;
 }> = ({ options, selectedValue, onValueChange }) => {
-  // subscribe only to the flag so the control re-renders on theme toggle
   const isDarkMode = useThemeStore((s) => s.isDarkMode);
 
-  // palette just for the control
   const segmentBackground      = isDarkMode ? "#2C2C2E" : "#F5F5F7";
   const segmentActiveBackground = isDarkMode ? "#3A3A3C" : "#FFFFFF";
   const segmentText            = isDarkMode ? "#D3D3D3" : "#8E8E93";
@@ -38,16 +44,17 @@ const SegmentedControl: React.FC<{
         { backgroundColor: segmentBackground },        // ← gray pill track
       ]}
     >
-      {options.map((option) => (
+      {options.map((option) => ( /* It goes through each item in the options array and creates a button for it. */
         <TouchableOpacity
           key={option.key}
           style={[
             styles.segmentButton,
-            selectedValue === option.key && {
+            
+            selectedValue === option.key && { /* Checks for the button that's currently selected*/
               backgroundColor: segmentActiveBackground, // selected pill
             },
           ]}
-          onPress={() => onValueChange(option.key)}
+          onPress={() => onValueChange(option.key)} /* Changes tab when one of the two buttons is clicked */
           activeOpacity={0.8}
         >
           <Text
