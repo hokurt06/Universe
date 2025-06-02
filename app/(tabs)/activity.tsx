@@ -1,4 +1,8 @@
-// app/(tabs)/activity.tsx
+/* app/(tabs)/activity.tsx
+ *
+ * Campus Events screen – Apple aesthetic design
+ * Clean, minimal, elegant UI following Apple's design principles
+ */
 
 import React, { useState, useEffect, useCallback } from "react";
 import {
@@ -13,7 +17,7 @@ import {
   Modal,
   ActivityIndicator,
 } from "react-native";
-import { useThemeStore } from "../../hooks/themeStore";
+import { Ionicons } from "@expo/vector-icons";
 
 ////////////////////////////////////////////////////////////////////////////////
 // Types
@@ -53,7 +57,16 @@ const CATEGORIES: readonly TopCategory[] = [
   { id: "arts", title: "Arts & Culture", icon: "color-palette" },
   { id: "career", title: "Career Dev", icon: "briefcase" },
   { id: "student", title: "Student Life", icon: "happy" },
-];
+] as const;
+
+const COLORS = {
+  background: "#FFFFFF",
+  cardBackground: "#F5F5F7",
+  label: "#1D1D1F",
+  secondaryLabel: "#86868B",
+  separator: "#E5E5EA",
+  systemBlue: "#007AFF",
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 // Helpers
@@ -119,28 +132,7 @@ const formatEvents = (raw: any[], categoryId: TopCategory["id"]): EventVM[] => {
 ////////////////////////////////////////////////////////////////////////////////
 
 const ActivityScreen: React.FC = () => {
-  const { isDarkMode } = useThemeStore();
-
-  const theme = isDarkMode
-    ? {
-        background: "#121212",
-        cardBackground: "#2C2C2E",
-        label: "#FFFFFF",
-        secondaryLabel: "#A1A1A1",
-        separator: "#3E3E3E",
-        accent: "#0A84FF",
-      }
-    : {
-        background: "#FFFFFF",
-        cardBackground: "#F5F5F7",
-        label: "#1D1D1F",
-        secondaryLabel: "#86868B",
-        separator: "#E5E5EA",
-        accent: "#007AFF",
-      };
-
-  const [selectedCategoryId, setSelectedCategoryId] =
-    useState<TopCategory["id"]>("academic");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<TopCategory["id"]>("academic");
   const [events, setEvents] = useState<EventVM[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -149,9 +141,9 @@ const ActivityScreen: React.FC = () => {
   const fetchEvents = useCallback(async (categoryId: TopCategory["id"]) => {
     setLoading(true);
     try {
-      const res = await fetch(
-        "https://universe.terabytecomputing.com:3000/api/v1/events"
-      );
+      const res = await fetch("https://universe.terabytecomputing.com:3000/api/v1/events", {
+        headers: { "Content-Type": "application/json" },
+      });
       const data = await res.json();
       setEvents(formatEvents(data, categoryId));
     } catch (err) {
@@ -165,90 +157,61 @@ const ActivityScreen: React.FC = () => {
     fetchEvents(selectedCategoryId);
   }, [fetchEvents, selectedCategoryId]);
 
-  /* Review  
-      Apple-like. Horizontal scroll view to hold the category tabs: “Academic” and “Alumni".
+  /* Review 
+      This is the header for the Events screen. 
+      I wanted to keep it really clean and Apple-like.So I used a horizontal scroll view to hold the category tabs — things like “Academic,” “Alumni,” and so on. 
       You can swipe across them. Each tab is styled to look like a soft rounded button, and when one is selected, it gets a blue background with white text. 
       That’s done by checking selectedCategoryId === cat.id and adding the selected style only for that one.
       Tapping a tab updates the selected category, and that tells the rest of the app to reload the events from that group.
       */
+  const renderHeader = () => (
+    <View style={styles.headerContainer}>
+      <Text style={styles.headerText}>Events</Text>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.categoryScroll}
+      >
+        {CATEGORIES.map((cat) => (
+          <TouchableOpacity
+            key={cat.id}
+            style={[styles.categoryTab, selectedCategoryId === cat.id && styles.categoryTabSelected]} 
+            /* selectedCategoryId === cat.id	Is this the currently selected tab?
+            onPress={() => setSelectedCategoryId(cat.id)}:	Changes the selected tab when tapped
+            ScrollView horizontal:	Makes the tabs scrollable left to right */
+            onPress={() => setSelectedCategoryId(cat.id)}
+          >
+            <Text style={[styles.categoryLabel, selectedCategoryId === cat.id && styles.categoryLabelSelected]}>
+              {cat.title}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  );
+
   const renderItem = ({ item }: { item: EventVM }) => (
     <TouchableOpacity
-      style={[styles.card, { backgroundColor: theme.cardBackground }]}
+      style={styles.card}
       activeOpacity={0.8}
       onPress={() => {
         setSelectedEvent(item);
         setModalVisible(true);
       }}
     >
-      <Text style={[styles.cardTitle, { color: theme.label }]}>
-        {item.name}
-      </Text>
-      <Text style={[styles.cardSubtitle, { color: theme.secondaryLabel }]}>
-        {item.date} at {item.time}
-      </Text>
-      <Text style={[styles.cardLocation, { color: theme.secondaryLabel }]}>
-        {item.location}
-      </Text>
+      <Text style={styles.cardTitle}>{item.name}</Text>
+      <Text style={styles.cardSubtitle}>{item.date} at {item.time}</Text>
+      <Text style={styles.cardLocation}>{item.location}</Text>
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView
-      style={[styles.safeArea, { backgroundColor: theme.background }]}
-    >
-      <StatusBar
-        barStyle={isDarkMode ? "light-content" : "dark-content"}
-        backgroundColor={theme.background}
-      />
-      <View
-        style={[
-          styles.headerContainer,
-          {
-            backgroundColor: theme.background,
-            borderBottomColor: theme.separator,
-          },
-        ]}
-      >
-        <Text style={[styles.headerText, { color: theme.label }]}>Events</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoryScroll}
-        >
-          {CATEGORIES.map((cat) => (
-            <TouchableOpacity
-              key={cat.id}
-              style={[
-                styles.categoryTab,
-                {
-                  backgroundColor:
-                    selectedCategoryId === cat.id
-                      ? theme.accent
-                      : theme.cardBackground,
-                },
-              ]}
-              onPress={() => setSelectedCategoryId(cat.id)}
-            >
-              <Text
-                style={{
-                  fontSize: 15,
-                  fontWeight: selectedCategoryId === cat.id ? "600" : "500",
-                  color:
-                    selectedCategoryId === cat.id
-                      ? theme.background
-                      : theme.secondaryLabel,
-                }}
-              >
-                {cat.title}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+      {renderHeader()}
       {loading ? (
         <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" color={theme.accent} />
+          <ActivityIndicator size="large" color={COLORS.systemBlue} />
         </View>
       ) : (
         <FlatList
@@ -256,46 +219,24 @@ const ActivityScreen: React.FC = () => {
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.listContainer}
-          ListEmptyComponent={
-            <Text style={[styles.emptyText, { color: theme.secondaryLabel }]}>
-              No upcoming events
-            </Text>
-          }
+          ListEmptyComponent={<Text style={styles.emptyText}>No upcoming events</Text>}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
         />
       )}
 
       <Modal visible={modalVisible} animationType="slide">
-        <SafeAreaView
-          style={[styles.modalContainer, { backgroundColor: theme.background }]}
-        >
-          <View
-            style={[styles.modalHeader, { borderBottomColor: theme.separator }]}
-          >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setModalVisible(false)}>
-              <Text style={[styles.modalClose, { color: theme.accent }]}>
-                Close
-              </Text>
+              <Text style={styles.modalClose}>Close</Text>
             </TouchableOpacity>
           </View>
           {selectedEvent && (
             <View style={styles.modalContent}>
-              <Text style={[styles.modalTitle, { color: theme.label }]}>
-                {selectedEvent.name}
-              </Text>
-              <Text
-                style={[styles.modalSubtitle, { color: theme.secondaryLabel }]}
-              >
-                {selectedEvent.date} at {selectedEvent.time}
-              </Text>
-              <Text
-                style={[styles.modalLocation, { color: theme.secondaryLabel }]}
-              >
-                {selectedEvent.location}
-              </Text>
-              <Text style={[styles.modalDescription, { color: theme.label }]}>
-                {selectedEvent.description}
-              </Text>
+              <Text style={styles.modalTitle}>{selectedEvent.name}</Text>
+              <Text style={styles.modalSubtitle}>{selectedEvent.date} at {selectedEvent.time}</Text>
+              <Text style={styles.modalLocation}>{selectedEvent.location}</Text>
+              <Text style={styles.modalDescription}>{selectedEvent.description}</Text>
             </View>
           )}
         </SafeAreaView>
@@ -311,47 +252,68 @@ const ActivityScreen: React.FC = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    backgroundColor: COLORS.background,
   },
   headerContainer: {
     paddingTop: 8,
     paddingBottom: 16,
     paddingHorizontal: 20,
+    backgroundColor: COLORS.background,
     borderBottomWidth: 1,
+    borderBottomColor: COLORS.separator,
   },
   headerText: {
     fontSize: 28,
     fontWeight: "600",
+    color: COLORS.label,
     marginBottom: 12,
   },
   categoryScroll: {
     flexDirection: "row",
     paddingHorizontal: 4,
-    paddingVertical: 4,
+    paddingVertical: 4
   },
   categoryTab: {
+    backgroundColor: COLORS.cardBackground,
     borderRadius: 16,
     paddingVertical: 6,
     paddingHorizontal: 14,
     marginRight: 8,
   },
+  categoryTabSelected: {
+    backgroundColor: COLORS.systemBlue,
+  },
+  categoryLabel: {
+    fontSize: 15,
+    color: COLORS.secondaryLabel,
+    fontWeight: "500",
+  },
+  categoryLabelSelected: {
+    color: COLORS.background,
+    fontWeight: "600",
+  },
   listContainer: {
     padding: 16,
   },
   card: {
+    backgroundColor: COLORS.cardBackground,
     padding: 16,
     borderRadius: 10,
   },
   cardTitle: {
     fontSize: 16,
     fontWeight: "600",
+    color: COLORS.label,
     marginBottom: 4,
   },
   cardSubtitle: {
     fontSize: 14,
+    color: COLORS.secondaryLabel,
     marginBottom: 2,
   },
   cardLocation: {
     fontSize: 14,
+    color: COLORS.secondaryLabel,
   },
   separator: {
     height: 12,
@@ -365,16 +327,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 40,
     fontSize: 16,
+    color: COLORS.secondaryLabel,
   },
   modalContainer: {
     flex: 1,
+    backgroundColor: COLORS.background,
   },
   modalHeader: {
     padding: 16,
     borderBottomWidth: 1,
+    borderBottomColor: COLORS.separator,
   },
   modalClose: {
     fontSize: 16,
+    color: COLORS.systemBlue,
     fontWeight: "500",
   },
   modalContent: {
@@ -383,19 +349,23 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: "600",
+    color: COLORS.label,
     marginBottom: 8,
   },
   modalSubtitle: {
     fontSize: 16,
+    color: COLORS.secondaryLabel,
     marginBottom: 4,
   },
   modalLocation: {
     fontSize: 16,
+    color: COLORS.secondaryLabel,
     marginBottom: 12,
   },
   modalDescription: {
     fontSize: 16,
     lineHeight: 22,
+    color: COLORS.label,
   },
 });
 
