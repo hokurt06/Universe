@@ -157,13 +157,7 @@ const ActivityScreen: React.FC = () => {
     fetchEvents(selectedCategoryId);
   }, [fetchEvents, selectedCategoryId]);
 
-  /* Review 
-      This is the header for the Events screen. 
-      I wanted to keep it really clean and Apple-like.So I used a horizontal scroll view to hold the category tabs — things like “Academic,” “Alumni,” and so on. 
-      You can swipe across them. Each tab is styled to look like a soft rounded button, and when one is selected, it gets a blue background with white text. 
-      That’s done by checking selectedCategoryId === cat.id and adding the selected style only for that one.
-      Tapping a tab updates the selected category, and that tells the rest of the app to reload the events from that group.
-      */
+ 
   const renderHeader = () => (
     <View style={styles.headerContainer}>
       <Text style={styles.headerText}>Events</Text>
@@ -176,9 +170,6 @@ const ActivityScreen: React.FC = () => {
           <TouchableOpacity
             key={cat.id}
             style={[styles.categoryTab, selectedCategoryId === cat.id && styles.categoryTabSelected]} 
-            /* selectedCategoryId === cat.id	Is this the currently selected tab?
-            onPress={() => setSelectedCategoryId(cat.id)}:	Changes the selected tab when tapped
-            ScrollView horizontal:	Makes the tabs scrollable left to right */
             onPress={() => setSelectedCategoryId(cat.id)}
           >
             <Text style={[styles.categoryLabel, selectedCategoryId === cat.id && styles.categoryLabelSelected]}>
