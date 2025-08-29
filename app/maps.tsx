@@ -34,17 +34,17 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
   return distance;
 };
 
-// Location Data Interface (adjusted to match potential API response)
+// Location Data Interface
 interface LocationData {
-  id: string; // For Google Places, this will be place_id
+  id: string;
   name: string;
-  description: string; // For Google Places, this might be the address or primary type
+  description: string;
   latitude: number;
   longitude: number;
-  category: string; // For Google Places, this might be the first type or a custom mapping
+  category: string; 
   distance?: number;
-  photoUrl?: string; // You'd need Google Places Photo API for real photos
-  directionsUrl?: string; // Can be constructed using Google Maps URL scheme
+  photoUrl?: string; 
+  directionsUrl?: string;
 }
 
 // User Location State
@@ -54,9 +54,6 @@ interface UserLocation {
   latitudeDelta: number;
   longitudeDelta: number;
 }
-
-// Remove the hardcoded nearbyLocations array
-// const nearbyLocations: LocationData[] = [...]
 
 // Location Item View
 interface LocationItemProps {
@@ -123,8 +120,6 @@ export default function MapScreen() {
           longitudeDelta: 0.008,
         });
 
-        // Fetch nearby places using Google Places API
-        // You can adjust the radius (in meters) and types as needed
         const radius = 1609; // 1 mile radius
         const types = "university|food|restaurant|cafe|library|gym|lodging|store|park|point_of_interest"; // Specific types
 
@@ -188,8 +183,6 @@ export default function MapScreen() {
         markerRefs.current[location.id]?.showCallout();
       }
     }
-    // You could also navigate to a detail screen here:
-    // router.push({ pathname: "/location-details", params: { id: location.id } });
   };
 
   const renderMapContent = () => {
@@ -270,7 +263,6 @@ export default function MapScreen() {
   );
 }
 
-// Styles (no changes needed unless you want to adjust appearance)
 const styles = StyleSheet.create({
   container: {
     flex: 1,

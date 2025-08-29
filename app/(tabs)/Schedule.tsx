@@ -1,4 +1,3 @@
-/*  CourseSchedule.tsx  –– schedule + exams with dark-mode and spaced-out modals */
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -16,15 +15,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useThemeStore } from "../../hooks/themeStore";
 
-/* ────────── segmented control ────────── */
-/* This is a reusable segmented control component that lets the user switch between options: "Schedule" and "Exams." */
-/* It lets the user switch between the two views by tapping on one. Whichever one is selected gets highlighted, and the app shows the right content underneath. */
-/* demonstrates how to selectively style active tabs with different backgrounds and text colors for a clean toggle effect. */
-
-/* options: tells it what buttons to show ("Schedule", "Exams", etc.)
-selectedValue: tells it which one is currently selected
-onValueChange: tells the parent what to update when a button is pressed */
-
 const SegmentedControl: React.FC<{
   options: { key: string; label: string }[];
   selectedValue: string;
@@ -41,20 +31,20 @@ const SegmentedControl: React.FC<{
     <View
       style={[
         styles.segmentedControlContainer,
-        { backgroundColor: segmentBackground },        // ← gray pill track
+        { backgroundColor: segmentBackground },
       ]}
     >
-      {options.map((option) => ( /* It goes through each item in the options array and creates a button for it. */
+      {options.map((option) => ( 
         <TouchableOpacity
           key={option.key}
           style={[
             styles.segmentButton,
             
-            selectedValue === option.key && { /* Checks for the button that's currently selected*/
-              backgroundColor: segmentActiveBackground, // selected pill
+            selectedValue === option.key && { 
+              backgroundColor: segmentActiveBackground, 
             },
           ]}
-          onPress={() => onValueChange(option.key)} /* Changes tab when one of the two buttons is clicked */
+          onPress={() => onValueChange(option.key)} 
           activeOpacity={0.8}
         >
           <Text
@@ -75,19 +65,15 @@ const SegmentedControl: React.FC<{
 };
 
 
-/* ────────── main component ────────── */
 const CourseSchedule: React.FC = () => {
   const [viewMode, setViewMode] = useState<"schedule" | "exams">("schedule");
 
-  /* schedule modal */
   const [selectedEnrollment, setSelectedEnrollment] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
 
-  /* exam modal */
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
   const [showExamModal, setShowExamModal] = useState(false);
 
-  /* term + data */
   const [selectedTerm, setSelectedTerm] = useState("");
   const [terms, setTerms] = useState<{ key: string; label: string }[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
@@ -97,7 +83,6 @@ const CourseSchedule: React.FC = () => {
   const insets = useSafeAreaInsets();
   const isDarkMode = useThemeStore((s) => s.isDarkMode);
 
-  /* theme palette */
   const theme = isDarkMode
     ? {
         background: "#121212",
@@ -124,7 +109,6 @@ const CourseSchedule: React.FC = () => {
         modalOverlay: "rgba(0,0,0,0.4)",
       };
 
-  /* demo exam data */
   type Exam = { id: number; subject: string; midterm: string; final: string };
   const exams: Exam[] = [
     {
@@ -147,7 +131,6 @@ const CourseSchedule: React.FC = () => {
     },
   ];
 
-  /* ─── fetch terms & enrollments ─── */
   useEffect(() => {
     (async () => {
       try {
@@ -188,7 +171,6 @@ const CourseSchedule: React.FC = () => {
 
   const coursesForTerm = courses.filter((c) => c.quarter === selectedTerm);
 
-  /* ─── schedule card ─── */
   const renderCourseItem = ({ item }: { item: any }) => (
     <TouchableOpacity
       style={[styles.classCard, { backgroundColor: theme.card }]}
@@ -215,7 +197,6 @@ const CourseSchedule: React.FC = () => {
     </TouchableOpacity>
   );
 
-  /* ─── exam card ─── */
   const renderExamItem = ({ item }: { item: Exam }) => (
     <TouchableOpacity
       style={[styles.classCard, { backgroundColor: theme.card }]}
@@ -236,7 +217,6 @@ const CourseSchedule: React.FC = () => {
     </TouchableOpacity>
   );
 
-  /* ─── modal helpers ─── */
   const translateY = modalAnim.interpolate({ inputRange: [0, 1], outputRange: [300, 0] });
 
   const openScheduleModal = (e: any) => {
@@ -263,7 +243,6 @@ const CourseSchedule: React.FC = () => {
     });
   };
 
-  /* ─── schedule info modal (spaced rows) ─── */
   const ScheduleModal = () => (
     <Modal transparent visible={showModal}>
       <View style={[styles.modalOverlay, { backgroundColor: theme.modalOverlay }]}>
@@ -317,7 +296,6 @@ const CourseSchedule: React.FC = () => {
     </Modal>
   );
 
-  /* ─── exam info modal ─── */
   const ExamModal = () => (
     <Modal transparent visible={showExamModal}>
       <View style={[styles.modalOverlay, { backgroundColor: theme.modalOverlay }]}>
@@ -353,7 +331,7 @@ const CourseSchedule: React.FC = () => {
     </Modal>
   );
 
-  /* ─── render ─── */
+  
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
@@ -371,7 +349,7 @@ const CourseSchedule: React.FC = () => {
           {viewMode === "schedule" ? "Course Schedule" : "Exam Schedule"}
         </Text>
 
-        {/* term picker */}
+        {}
         <TouchableOpacity
           style={[
             styles.termSelector,
@@ -454,7 +432,6 @@ const CourseSchedule: React.FC = () => {
   );
 };
 
-/* ────────── styles ────────── */
 const styles = StyleSheet.create({
   container: { flex: 1 },
   headerContainer: { paddingHorizontal: 20, paddingBottom: 18, borderBottomWidth: 1 },
@@ -478,7 +455,6 @@ const styles = StyleSheet.create({
   modalHeader: { flexDirection: "row", justifyContent: "space-between", padding: 16 },
   modalHeaderText: { fontSize: 18, fontWeight: "600" },
   modalBody: { padding: 16 },
-  /* new spaced-row styles */
   modalSection: { marginBottom: 18 },
   modalLabel: { fontSize: 13, marginBottom: 4 },
   modalValue: { fontSize: 16, fontWeight: "600" },

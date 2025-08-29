@@ -21,23 +21,14 @@ import Logo from "../components/Logo";
 const LoginScreen: React.FC = () => {
   const router = useRouter();
 
-  // -------------------------------------------------
-  // Local state
-  // -------------------------------------------------
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false); // sign-in request
   const [checkingToken, setCheckingToken] = useState(true); // splash on launch
 
-  // -------------------------------------------------
-  // Animation setup
-  // -------------------------------------------------
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
   const slideAnim = React.useRef(new Animated.Value(20)).current;
 
-  // -------------------------------------------------
-  // Validate any stored token on mount
-  // -------------------------------------------------
   useEffect(() => {
     const checkToken = async () => {
       try {
@@ -59,7 +50,7 @@ const LoginScreen: React.FC = () => {
           return; // short-circuit – no UI needed
         }
 
-        // Bad token → remove it
+        // Bad token, remove it
         await AsyncStorage.removeItem("authToken");
       } catch (err) {
         console.error("Token validation error:", err);
@@ -71,9 +62,6 @@ const LoginScreen: React.FC = () => {
     checkToken();
   }, [router]);
 
-  // -------------------------------------------------
-  // Play entrance animation once splash finishes
-  // -------------------------------------------------
   useEffect(() => {
     if (checkingToken) return;
 
@@ -93,9 +81,6 @@ const LoginScreen: React.FC = () => {
     ]).start();
   }, [checkingToken, fadeAnim, slideAnim]);
 
-  // -------------------------------------------------
-  // Sign-in handler
-  // -------------------------------------------------
   const handleSignIn = async () => {
     if (!email || !password) {
       Alert.alert("Sign In Failed", "Please enter both email and password.");
@@ -135,9 +120,6 @@ const LoginScreen: React.FC = () => {
     }
   };
 
-  // -------------------------------------------------
-  // Splash screen while validating token
-  // -------------------------------------------------
   if (checkingToken) {
     return (
       <View style={styles.splashContainer}>
@@ -146,9 +128,6 @@ const LoginScreen: React.FC = () => {
     );
   }
 
-  // -------------------------------------------------
-  // Main UI
-  // -------------------------------------------------
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
@@ -242,9 +221,6 @@ const LoginScreen: React.FC = () => {
   );
 };
 
-// -------------------------------------------------
-// Styles
-// -------------------------------------------------
 const styles = StyleSheet.create({
   container: {
     flex: 1,

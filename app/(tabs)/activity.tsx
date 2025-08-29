@@ -1,9 +1,3 @@
-/* app/(tabs)/activity.tsx
- *
- * Campus Events screen – Apple aesthetic design
- * Clean, minimal, elegant UI following Apple's design principles
- */
-
 import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
@@ -18,10 +12,6 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-
-////////////////////////////////////////////////////////////////////////////////
-// Types
-////////////////////////////////////////////////////////////////////////////////
 
 interface ApiCategory {
   CategoryName: string;
@@ -46,10 +36,6 @@ interface EventVM {
   categories: ApiCategory[];
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// Constants
-////////////////////////////////////////////////////////////////////////////////
-
 const CATEGORIES: readonly TopCategory[] = [
   { id: "academic", title: "Academic", icon: "school" },
   { id: "alumni", title: "Alumni", icon: "ribbon" },
@@ -68,9 +54,6 @@ const COLORS = {
   systemBlue: "#007AFF",
 };
 
-////////////////////////////////////////////////////////////////////////////////
-// Helpers
-////////////////////////////////////////////////////////////////////////////////
 
 const toMillis = (raw: string): number => {
   const match = raw.match(/\d{9,}/)?.[0];
@@ -127,9 +110,6 @@ const formatEvents = (raw: any[], categoryId: TopCategory["id"]): EventVM[] => {
     }));
 };
 
-////////////////////////////////////////////////////////////////////////////////
-// Component
-////////////////////////////////////////////////////////////////////////////////
 
 const ActivityScreen: React.FC = () => {
   const [selectedCategoryId, setSelectedCategoryId] = useState<TopCategory["id"]>("academic");
@@ -235,10 +215,6 @@ const ActivityScreen: React.FC = () => {
     </SafeAreaView>
   );
 };
-
-////////////////////////////////////////////////////////////////////////////////
-// Styles
-////////////////////////////////////////////////////////////////////////////////
 
 const styles = StyleSheet.create({
   safeArea: {

@@ -1,4 +1,3 @@
-// byteme/app/tabs/tablayout.tsx
 import { Tabs } from "expo-router";
 import React from "react";
 import { Platform, Image } from "react-native";
